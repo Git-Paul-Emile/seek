@@ -1,0 +1,1257 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SEEK API - Plateforme Immobilière",
+    "version": "1.0.0",
+    "description": "API pour la plateforme de location immobilère SEEK au Sénégal\n\n## Environments\n- **Local**: http://localhost:8000\n- **Production**: https://seek-back-79vo.onrender.com\n\n## Authentification\nL'API utilise plusieurs types d'authentification JWT:\n- **Admin**: Cookie HTTP-Only avec access/refresh tokens\n- **Owner**: Bearer token dans le header Authorization\n- **Locataire**: Bearer token spécifique\n- **Compte Public**: Bearer token spécifique",
+    "contact": {
+      "name": "Support SEEK",
+      "email": "support@seek.sn"
+    },
+    "license": {
+      "name": "ISC",
+      "url": "https://opensource.org/licenses/ISC"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Serveur de développement local"
+    },
+    {
+      "url": "https://seek-back-79vo.onrender.com",
+      "description": "Serveur de production"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token pour Owner, Locataire, ou Compte Public"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken",
+        "description": "Cookie JWT pour Admin"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Health", "description": "Vérification de santé" },
+    { "name": "Auth", "description": "Authentification Admin" },
+    { "name": "Owner", "description": "Authentification et gestion Propriétaire" },
+    { "name": "Locataire", "description": "Espace Locataire" },
+    { "name": "Compte Public", "description": "Authentification et favoris Visiteur" },
+    { "name": "Biems", "description": "Gestion des biens immobiliers" },
+    { "name": "Baux", "description": "Gestion des baux locatifs" },
+    { "name": "Transactions", "description": "Historique des paiements" },
+    { "name": "Geo", "description": "Données géographiques" },
+    { "name": "Types", "description": "Types de logement et transaction" },
+    { "name": "Premium", "description": "Mise en avant payante" },
+    { "name": "Monetisation", "description": "Configuration de la monétisation" },
+    { "name": "Stats", "description": "Statistiques" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Vérification de santé de l'API",
+        "responses": {
+          "200": { "description": "API opérationnelle" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Connexion administrateur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Connexion réussie" },
+          "401": { "description": "Identifiants invalides" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Obtenir le profil admin connecté",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil utilisateur" },
+          "401": { "description": "Non autorisé" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Rafraîchir le token d'accès",
+        "responses": {
+          "200": { "description": "Token rafraîchi" },
+          "401": { "description": "Token invalide" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Déconnexion",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Déconnexion réussie" }
+        }
+      }
+    },
+    "/api/auth/profile": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Mettre à jour le profil admin",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil mis à jour" }
+        }
+      }
+    },
+    "/api/auth/change-password": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Changer le mot de passe admin",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Mot de passe changé" }
+        }
+      }
+    },
+    "/api/owner/auth/register": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Inscription propriétaire",
+        "responses": {
+          "201": { "description": "Compte créé" },
+          "400": { "description": "Données invalides" }
+        }
+      }
+    },
+    "/api/owner/auth/login": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Connexion propriétaire",
+        "responses": {
+          "200": { "description": "Connexion réussie" },
+          "401": { "description": "Identifiants invalides" }
+        }
+      }
+    },
+    "/api/owner/auth/refresh": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Rafraîchir token propriétaire",
+        "responses": {
+          "200": { "description": "Token rafraîchi" }
+        }
+      }
+    },
+    "/api/owner/auth/forgot-password": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Mot de passe oublié",
+        "responses": {
+          "200": { "description": "Email de réinitialisation envoyé" }
+        }
+      }
+    },
+    "/api/owner/auth/reset-password": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Réinitialiser le mot de passe",
+        "responses": {
+          "200": { "description": "Mot de passe réinitialisé" }
+        }
+      }
+    },
+    "/api/owner/auth/logout": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Déconnexion propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Déconnexion réussie" }
+        }
+      }
+    },
+    "/api/owner/auth/me": {
+      "get": {
+        "tags": ["Owner"],
+        "summary": "Profil propriétaire connecté",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil" }
+        }
+      }
+    },
+    "/api/owner/profile": {
+      "put": {
+        "tags": ["Owner"],
+        "summary": "Mettre à jour le profil",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil mis à jour" }
+        }
+      },
+      "delete": {
+        "tags": ["Owner"],
+        "summary": "Supprimer le compte",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Compte supprimé" }
+        }
+      }
+    },
+    "/api/owner/verification": {
+      "post": {
+        "tags": ["Owner"],
+        "summary": "Soumettre vérification identité",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Vérification soumise" }
+        }
+      }
+    },
+    "/api/biens": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Liste des biens du propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des biens" }
+        }
+      },
+      "post": {
+        "tags": ["Biems"],
+        "summary": "Créer un bien (brouillon)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Bien créé" }
+        }
+      }
+    },
+    "/api/biens/stats": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Statistiques des biens du propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Statistiques" }
+        }
+      }
+    },
+    "/api/biens/draft": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Récupérer le brouillon",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Brouillon" }
+        }
+      },
+      "post": {
+        "tags": ["Biems"],
+        "summary": "Enregistrer le brouillon",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Brouillon enregistré" }
+        }
+      }
+    },
+    "/api/biens/public/recherche": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Recherche publique de biens",
+        "responses": {
+          "200": { "description": "Résultats de recherche" }
+        }
+      }
+    },
+    "/api/biens/public/dernieres": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Dernières annonces publiées",
+        "responses": {
+          "200": { "description": "Liste des dernières annonces" }
+        }
+      }
+    },
+    "/api/biens/public/lieux": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Quartiers + villes distincts",
+        "responses": {
+          "200": { "description": "Liste des lieux" }
+        }
+      }
+    },
+    "/api/biens/{id}": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Voir un bien",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Bien trouvé" },
+          "404": { "description": "Bien non trouvé" }
+        }
+      },
+      "delete": {
+        "tags": ["Biems"],
+        "summary": "Supprimer un brouillon",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Bien supprimé" }
+        }
+      }
+    },
+    "/api/biens/public/{id}": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Voir une annonce publiée",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Annonce trouvée" }
+        }
+      }
+    },
+    "/api/biens/public/{id}/similaires": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Annonces similaires",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Annonces similaires" }
+        }
+      }
+    },
+    "/api/geo/pays": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Liste des pays",
+        "responses": {
+          "200": { "description": "Liste des pays" }
+        }
+      }
+    },
+    "/api/geo/pays/{paysId}/villes": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Villes d'un pays",
+        "parameters": [
+          { "name": "paysId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Liste des villes" }
+        }
+      }
+    },
+    "/api/geo/villes/{villeId}/quartiers": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Quartiers d'une ville",
+        "parameters": [
+          { "name": "villeId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Liste des quartiers" }
+        }
+      }
+    },
+    "/api/geo/admin/pays": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Tous les pays (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des pays" }
+        }
+      },
+      "post": {
+        "tags": ["Geo"],
+        "summary": "Créer un pays (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Pays créé" }
+        }
+      }
+    },
+    "/api/geo/pays/{id}": {
+      "put": {
+        "tags": ["Geo"],
+        "summary": "Modifier un pays (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pays modifié" }
+        }
+      },
+      "delete": {
+        "tags": ["Geo"],
+        "summary": "Supprimer un pays (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pays supprimé" }
+        }
+      }
+    },
+    "/api/geo/admin/villes": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Toutes les villes (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des villes" }
+        }
+      },
+      "post": {
+        "tags": ["Geo"],
+        "summary": "Créer une ville (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Ville créée" }
+        }
+      }
+    },
+    "/api/geo/villes/{id}": {
+      "put": {
+        "tags": ["Geo"],
+        "summary": "Modifier une ville",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Ville modifiée" }
+        }
+      },
+      "delete": {
+        "tags": ["Geo"],
+        "summary": "Supprimer une ville",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Ville supprimée" }
+        }
+      }
+    },
+    "/api/geo/admin/quartiers": {
+      "get": {
+        "tags": ["Geo"],
+        "summary": "Tous les quartiers (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des quartiers" }
+        }
+      },
+      "post": {
+        "tags": ["Geo"],
+        "summary": "Créer un quartier (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Quartier créé" }
+        }
+      }
+    },
+    "/api/geo/quartiers/{id}": {
+      "put": {
+        "tags": ["Geo"],
+        "summary": "Modifier un quartier",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Quartier modifié" }
+        }
+      },
+      "delete": {
+        "tags": ["Geo"],
+        "summary": "Supprimer un quartier",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Quartier supprimé" }
+        }
+      }
+    },
+    "/api/types-logement": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Types de logement actifs",
+        "responses": {
+          "200": { "description": "Liste des types" }
+        }
+      }
+    },
+    "/api/types-logement/admin": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Tous les types (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des types" }
+        }
+      },
+      "post": {
+        "tags": ["Types"],
+        "summary": "Créer un type de logement (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Type créé" }
+        }
+      }
+    },
+    "/api/types-logement/{id}": {
+      "put": {
+        "tags": ["Types"],
+        "summary": "Modifier un type de logement",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Type modifié" }
+        }
+      },
+      "delete": {
+        "tags": ["Types"],
+        "summary": "Supprimer un type de logement",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Type supprimé" }
+        }
+      }
+    },
+    "/api/types-transaction": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Types de transaction",
+        "responses": {
+          "200": { "description": "Liste des types" }
+        }
+      }
+    },
+    "/api/types-transaction/admin": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Tous les types (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des types" }
+        }
+      },
+      "post": {
+        "tags": ["Types"],
+        "summary": "Créer un type de transaction (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Type créé" }
+        }
+      }
+    },
+    "/api/types-transaction/{id}": {
+      "put": {
+        "tags": ["Types"],
+        "summary": "Modifier un type de transaction",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Type modifié" }
+        }
+      },
+      "delete": {
+        "tags": ["Types"],
+        "summary": "Supprimer un type de transaction",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Type supprimé" }
+        }
+      }
+    },
+    "/api/statuts-bien": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Statuts de bien",
+        "responses": {
+          "200": { "description": "Liste des statuts" }
+        }
+      }
+    },
+    "/api/meubles": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Liste des meubles",
+        "responses": {
+          "200": { "description": "Liste des meubles" }
+        }
+      }
+    },
+    "/api/equipements": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Liste des équipements",
+        "responses": {
+          "200": { "description": "Liste des équipements" }
+        }
+      }
+    },
+    "/api/categories-meubles": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Catégories de meubles",
+        "responses": {
+          "200": { "description": "Liste des catégories" }
+        }
+      }
+    },
+    "/api/categories-equipements": {
+      "get": {
+        "tags": ["Types"],
+        "summary": "Catégories d'équipements",
+        "responses": {
+          "200": { "description": "Liste des catégories" }
+        }
+      }
+    },
+    "/api/owner/locataires": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Liste des locataires du propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des locataires" }
+        }
+      },
+      "post": {
+        "tags": ["Locataire"],
+        "summary": "Créer un locataire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Locataire créé" }
+        }
+      }
+    },
+    "/api/owner/locataires/{id}": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Détails d'un locataire",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Locataire trouvé" }
+        }
+      },
+      "patch": {
+        "tags": ["Locataire"],
+        "summary": "Modifier un locataire",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Locataire modifié" }
+        }
+      },
+      "delete": {
+        "tags": ["Locataire"],
+        "summary": "Supprimer un locataire",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Locataire supprimé" }
+        }
+      }
+    },
+    "/api/owner/locataires/{id}/lien": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Générer lien d'activation",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Lien généré" }
+        }
+      }
+    },
+    "/api/locataire/auth/login": {
+      "post": {
+        "tags": ["Locataire"],
+        "summary": "Connexion locataire",
+        "responses": {
+          "200": { "description": "Connexion réussie" }
+        }
+      }
+    },
+    "/api/locataire/auth/me": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Profil locataire connecté",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil" }
+        }
+      }
+    },
+    "/api/locataire/auth/echeancier": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Échéancier des paiements",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Échéancier" }
+        }
+      }
+    },
+    "/api/locataire/auth/contrat": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Contrat du locataire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Contrat" }
+        }
+      }
+    },
+    "/api/locataire/auth/quittances": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Liste des quittances",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des quittances" }
+        }
+      }
+    },
+    "/api/locataire/auth/verification": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Statut vérification",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Statut" }
+        }
+      },
+      "post": {
+        "tags": ["Locataire"],
+        "summary": "Soumettre vérification",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Vérification soumise" }
+        }
+      },
+      "delete": {
+        "tags": ["Locataire"],
+        "summary": "Annuler vérification",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Vérification annulée" }
+        }
+      }
+    },
+    "/api/locataire/auth/proprietaire": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Informations du propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Informations du propriétaire" }
+        }
+      }
+    },
+    "/api/locataire/auth/historique": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Historique de logement",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Historique" }
+        }
+      }
+    },
+    "/api/locataire/auth/documents": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "Documents du bien",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Documents" }
+        }
+      }
+    },
+    "/api/locataire/auth/etat-des-lieux": {
+      "get": {
+        "tags": ["Locataire"],
+        "summary": "États des lieux",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "États des lieux" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Bail actif d'un bien",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Bail trouvé" }
+        }
+      },
+      "post": {
+        "tags": ["Baux"],
+        "summary": "Créer un bail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": { "description": "Bail créé" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail/historique": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Historique des bails",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Historique des bails" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail/{bailId}/echeancier": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Échéancier d'un bail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Échéancier" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail/{bailId}/contrat": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Obtenir le contrat",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Contrat" }
+        }
+      },
+      "post": {
+        "tags": ["Baux"],
+        "summary": "Générer le contrat",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": { "description": "Contrat généré" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail/{bailId}/quittances": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Liste des quittances",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Liste des quittances" }
+        }
+      }
+    },
+    "/api/biens/{id}/bail/{bailId}/etat-des-lieux": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "États des lieux",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "États des lieux" }
+        }
+      },
+      "post": {
+        "tags": ["Baux"],
+        "summary": "Créer un état des lieux",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "bailId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": { "description": "État des lieux créé" }
+        }
+      }
+    },
+    "/api/public/auth/register": {
+      "post": {
+        "tags": ["Compte Public"],
+        "summary": "Inscription compte public",
+        "responses": {
+          "201": { "description": "Compte créé" }
+        }
+      }
+    },
+    "/api/public/auth/login": {
+      "post": {
+        "tags": ["Compte Public"],
+        "summary": "Connexion compte public",
+        "responses": {
+          "200": { "description": "Connexion réussie" }
+        }
+      }
+    },
+    "/api/public/auth/me": {
+      "get": {
+        "tags": ["Compte Public"],
+        "summary": "Profil connecté",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Profil" }
+        }
+      }
+    },
+    "/api/public/favoris": {
+      "get": {
+        "tags": ["Compte Public"],
+        "summary": "Liste des favoris",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des favoris" }
+        }
+      }
+    },
+    "/api/public/favoris/ids": {
+      "get": {
+        "tags": ["Compte Public"],
+        "summary": "IDs des favoris",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "IDs des favoris" }
+        }
+      }
+    },
+    "/api/public/favoris/{bienId}/toggle": {
+      "post": {
+        "tags": ["Compte Public"],
+        "summary": "Basculer favori",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "bienId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Favori basculé" }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Historique des transactions",
+        "responses": {
+          "200": { "description": "Historique" }
+        }
+      }
+    },
+    "/api/transactions/stats": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Statistiques des transactions",
+        "responses": {
+          "200": { "description": "Statistiques" }
+        }
+      }
+    },
+    "/api/transactions/admin": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Toutes les transactions (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Toutes les transactions" }
+        }
+      }
+    },
+    "/api/premium/formules": {
+      "get": {
+        "tags": ["Premium"],
+        "summary": "Formules premium",
+        "responses": {
+          "200": { "description": "Liste des formules" }
+        }
+      }
+    },
+    "/api/premium/paiements": {
+      "get": {
+        "tags": ["Premium"],
+        "summary": "Moyens de paiement",
+        "responses": {
+          "200": { "description": "Liste des moyens de paiement" }
+        }
+      }
+    },
+    "/api/premium/historique": {
+      "get": {
+        "tags": ["Premium"],
+        "summary": "Historique des paiements premium",
+        "responses": {
+          "200": { "description": "Historique" }
+        }
+      }
+    },
+    "/api/premium/admin/formules": {
+      "get": {
+        "tags": ["Premium"],
+        "summary": "Liste des formules (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des formules" }
+        }
+      },
+      "post": {
+        "tags": ["Premium"],
+        "summary": "Créer une formule (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Formule créée" }
+        }
+      }
+    },
+    "/api/monetisation/admin/config": {
+      "get": {
+        "tags": ["Monetisation"],
+        "summary": "Configuration (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Configuration" }
+        }
+      },
+      "put": {
+        "tags": ["Monetisation"],
+        "summary": "Modifier config (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Configuration modifiée" }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Statistiques publiques",
+        "responses": {
+          "200": { "description": "Statistiques" }
+        }
+      }
+    },
+    "/api/stats/admin": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Statistiques admin",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Statistiques" }
+        }
+      }
+    },
+    "/api/stats/proprietaires": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Statistiques des propriétaires",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Statistiques" }
+        }
+      }
+    },
+    "/api/proprietaires": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Liste propriétaires avec score",
+        "responses": {
+          "200": { "description": "Liste des propriétaires" }
+        }
+      }
+    },
+    "/api/owner": {
+      "get": {
+        "tags": ["Owner"],
+        "summary": "Score de confiance du propriétaire",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Score de confiance" }
+        }
+      }
+    },
+    "/api/annonces": {
+      "get": {
+        "tags": ["Biems"],
+        "summary": "Liste annonces (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des annonces" }
+        }
+      }
+    },
+    "/api/admin/verification": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Liste vérifications (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des vérifications" }
+        }
+      }
+    },
+    "/api/temoignages": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Liste témoignages",
+        "responses": {
+          "200": { "description": "Liste des témoignages" }
+        }
+      }
+    },
+    "/api/alertes": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Liste alertes",
+        "responses": {
+          "200": { "description": "Liste des alertes" }
+        }
+      }
+    },
+    "/api/promotions": {
+      "get": {
+        "tags": ["Premium"],
+        "summary": "Liste promotions",
+        "responses": {
+          "200": { "description": "Liste des promotions" }
+        }
+      }
+    },
+    "/api/suspension": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Liste suspensions (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des suspensions" }
+        }
+      }
+    },
+    "/api/modeles-contrat": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Liste modèles de contrat",
+        "responses": {
+          "200": { "description": "Liste des modèles" }
+        }
+      }
+    },
+    "/api/modeles-contrat/admin": {
+      "get": {
+        "tags": ["Baux"],
+        "summary": "Tous les modèles (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Liste des modèles" }
+        }
+      },
+      "post": {
+        "tags": ["Baux"],
+        "summary": "Créer un modèle (admin)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "201": { "description": "Modèle créé" }
+        }
+      }
+    }
+  }
+}

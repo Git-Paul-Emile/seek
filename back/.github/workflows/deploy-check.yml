@@ -1,0 +1,167 @@
+name: Deploy Check & Auto-Rollback — Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1 — Vérification du backend (Railway)
+  # ─────────────────────────────────────────────
+  check-backend:
+    name: Railway — Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Attendre le démarrage du déploiement Railway
+        run: sleep 30
+
+      - name: Surveiller le déploiement Railway
+        id: railway_check
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          MAX_WAIT=600   # 10 minutes max
+          INTERVAL=20
+          ELAPSED=0
+
+          echo "Surveillance du déploiement Railway..."
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            RESPONSE=$(curl -sf -X POST \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "query": "{ deployments(input: { projectId: \"'"$RAILWAY_PROJECT_ID"'\", serviceId: \"'"$RAILWAY_SERVICE_ID"'\" }) { edges { node { id status createdAt } } } }"
+              }' \
+              https://backboard.railway.app/graphql/v2)
+
+            CURRENT_ID=$(echo "$RESPONSE" | jq -r '.data.deployments.edges[0].node.id // empty')
+            STATUS=$(echo "$RESPONSE"     | jq -r '.data.deployments.edges[0].node.status // empty')
+            PREV_ID=$(echo "$RESPONSE"    | jq -r '.data.deployments.edges[1].node.id // empty')
+
+            echo "Status Railway: $STATUS (${ELAPSED}s écoulées)"
+
+            case "$STATUS" in
+              BUILDING|DEPLOYING|INITIALIZING|WAITING)
+                ;;
+              SUCCESS)
+                echo "deployment_id=$CURRENT_ID" >> "$GITHUB_OUTPUT"
+                echo "prev_deployment_id=$PREV_ID" >> "$GITHUB_OUTPUT"
+                echo "status=success" >> "$GITHUB_OUTPUT"
+                echo "Déploiement Railway réussi."
+                exit 0
+                ;;
+              FAILED|CRASHED|ERROR)
+                echo "deployment_id=$CURRENT_ID" >> "$GITHUB_OUTPUT"
+                echo "prev_deployment_id=$PREV_ID" >> "$GITHUB_OUTPUT"
+                echo "status=failed" >> "$GITHUB_OUTPUT"
+                echo "error=Déploiement Railway échoué (status: $STATUS)" >> "$GITHUB_OUTPUT"
+                exit 1
+                ;;
+            esac
+
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "error=Timeout : déploiement Railway > 10 minutes" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Health check /api/health
+        id: health_check
+        run: |
+          echo "Vérification de /api/health..."
+
+          MAX_ATTEMPTS=10
+          INTERVAL=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Tentative $ATTEMPT/$MAX_ATTEMPTS..."
+
+            HTTP_CODE=$(curl -sL -o /tmp/hc_body.txt -w "%{http_code}" --max-time 15 "${{ secrets.BACKEND_URL }}/api/health" 2>/dev/null || echo "000")
+            RESPONSE=$(cat /tmp/hc_body.txt 2>/dev/null || echo "")
+
+            echo "HTTP $HTTP_CODE — Body: $RESPONSE"
+
+            if [ "$HTTP_CODE" = "000" ] || [ -z "$RESPONSE" ]; then
+              echo "Endpoint inaccessible — nouvelle tentative dans ${INTERVAL}s"
+              sleep $INTERVAL
+              continue
+            fi
+
+            DB_STATUS=$(echo "$RESPONSE"  | jq -r '.db // empty' 2>/dev/null || echo "")
+            API_STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null || echo "")
+
+            if [ "$API_STATUS" = "OK" ]; then
+              echo "Health check OK (API: $API_STATUS, DB: ${DB_STATUS:-non renseigné})"
+              exit 0
+            fi
+
+            echo "Health check dégradé — API: $API_STATUS, DB: $DB_STATUS — nouvelle tentative dans ${INTERVAL}s"
+            sleep $INTERVAL
+          done
+
+          echo "error=Health check échoué après $MAX_ATTEMPTS tentatives" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Rollback Railway (déploiement précédent)
+        if: failure()
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          PREV_ID: ${{ steps.railway_check.outputs.prev_deployment_id }}
+        run: |
+          if [ -z "$PREV_ID" ]; then
+            echo "Aucun déploiement précédent disponible pour le rollback."
+            exit 0
+          fi
+
+          echo "Rollback Railway vers : $PREV_ID"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"mutation { deploymentRedeploy(id: \\\"$PREV_ID\\\") { id status } }\"}" \
+            https://backboard.railway.app/graphql/v2
+
+          echo "Rollback Railway déclenché."
+
+  # ─────────────────────────────────────────────
+  # JOB 2 — Notification email si échec
+  # ─────────────────────────────────────────────
+  notify-failure:
+    name: Notification — Échec Backend
+    needs: check-backend
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Envoyer l'email d'alerte
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "[SEEK BACK] Déploiement échoué — Rollback déclenché"
+          to: ${{ secrets.GMAIL_USERNAME }}
+          from: "Seek Deploy <${{ secrets.GMAIL_USERNAME }}>"
+          body: |
+            Un problème a été détecté sur le backend après le dernier push.
+            Un rollback automatique vers le déploiement précédent a été déclenché.
+
+            ─────────────────────────────────
+            Projet  : SEEK — Backend (Railway)
+            Branche : main
+            Commit  : ${{ github.sha }}
+            Auteur  : ${{ github.actor }}
+            Message : ${{ github.event.head_commit.message }}
+            Date    : ${{ github.event.head_commit.timestamp }}
+            ─────────────────────────────────
+
+            Logs GitHub Actions :
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

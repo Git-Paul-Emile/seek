@@ -1,0 +1,1270 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  experience  Int?
+  facilite    Int?
+  apprecie    String?
+  frustration String?
+  lu          Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Pays {
+  id        String   @id @default(uuid())
+  nom       String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  villes    Ville[]
+}
+
+model Ville {
+  id        String     @id @default(uuid())
+  nom       String
+  paysId    String
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  quartiers Quartier[]
+  pays      Pays       @relation(fields: [paysId], references: [id])
+
+  @@unique([nom, paysId])
+}
+
+model Quartier {
+  id        String   @id @default(uuid())
+  nom       String
+  villeId   String
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  biens     Bien[]
+  ville     Ville    @relation(fields: [villeId], references: [id])
+
+  @@unique([nom, villeId])
+  @@index([villeId])
+}
+
+model TypeLogement {
+  id        String              @id @default(uuid())
+  nom       String              @unique
+  slug      String              @unique
+  image     String?
+  actif     Boolean             @default(true)
+  ordre     Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  biens     Bien[]
+  champs    TypeLogementChamp[]
+  equipements TypeLogementEquipement[]
+  meubles     TypeLogementMeuble[]
+
+  @@index([slug])
+}
+
+model TypeTransaction {
+  id        String   @id @default(uuid())
+  nom       String   @unique
+  slug      String   @unique
+  actif     Boolean  @default(true)
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  biens     Bien[]
+
+  @@index([slug])
+}
+
+model StatutBien {
+  id        String   @id @default(uuid())
+  nom       String   @unique
+  slug      String   @unique
+  actif     Boolean  @default(true)
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  biens     Bien[]
+
+  @@index([slug])
+}
+
+model CategorieMeuble {
+  id        String   @id @default(uuid())
+  nom       String   @unique
+  slug      String   @unique
+  actif     Boolean  @default(true)
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  meubles   Meuble[]
+
+  @@index([slug])
+}
+
+model CategorieEquipement {
+  id          String       @id @default(uuid())
+  nom         String       @unique
+  slug        String       @unique
+  actif       Boolean      @default(true)
+  ordre       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  equipements Equipement[]
+
+  @@index([slug])
+}
+
+model Meuble {
+  id          String          @id @default(uuid())
+  nom         String
+  categorieId String
+  actif       Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  biens       BienMeuble[]
+  categorie   CategorieMeuble @relation(fields: [categorieId], references: [id])
+  typeLogements TypeLogementMeuble[]
+
+  @@unique([nom, categorieId])
+  @@index([categorieId])
+}
+
+model Equipement {
+  id          String              @id @default(uuid())
+  nom         String
+  categorieId String
+  actif       Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  biens       BienEquipement[]
+  categorie   CategorieEquipement @relation(fields: [categorieId], references: [id])
+  typeLogements TypeLogementEquipement[]
+
+  @@unique([nom, categorieId])
+  @@index([categorieId])
+}
+
+model TypeLogementEquipement {
+  typeLogementId String
+  equipementId   String
+  typeLogement   TypeLogement @relation(fields: [typeLogementId], references: [id], onDelete: Cascade)
+  equipement     Equipement   @relation(fields: [equipementId], references: [id], onDelete: Cascade)
+
+  @@unique([typeLogementId, equipementId])
+  @@index([typeLogementId])
+}
+
+model TypeLogementMeuble {
+  typeLogementId String
+  meubleId       String
+  typeLogement   TypeLogement @relation(fields: [typeLogementId], references: [id], onDelete: Cascade)
+  meuble         Meuble       @relation(fields: [meubleId], references: [id], onDelete: Cascade)
+
+  @@unique([typeLogementId, meubleId])
+  @@index([typeLogementId])
+}
+
+model FormulePremium {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  nom         String
+  dureeJours  Int
+  prix        Float
+  accroche    String
+  description String
+  idealPour   String[]
+  populer     Boolean  @default(false)
+  actif       Boolean  @default(true)
+  ordre       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Bien {
+  id                           String             @id @default(uuid())
+  titre                        String?
+  description                  String?
+  typeLogementId               String?
+  typeTransactionId            String?
+  statutBienId                 String?
+  proprietaireId               String
+  pays                         String?
+  region                       String?
+  ville                        String?
+  quartier                     String?
+  quartierId                   String?
+  adresse                      String?
+  pointRepere                  String?
+  latitude                     Float?
+  longitude                    Float?
+  surface                      Float?
+  surfaceParcelle              Float?
+  nbChambres                   Int?
+  nbSdb                        Int?
+  nbSalons                     Int?
+  nbCuisines                   Int?
+  etage                        Int?
+  nbEtages                     Int?
+  nbAppartements               Int?
+  nbPieces                     Int?
+  nbWc                         Int?
+  typeTerrain                  String?
+  cloture                      Boolean            @default(false)
+  typeBureau                   String?
+  rideauMetallique             Boolean            @default(false)
+  meuble                       Boolean            @default(false)
+  fumeurs                      Boolean            @default(false)
+  animaux                      Boolean            @default(false)
+  parking                      Boolean            @default(false)
+  ascenseur                    Boolean            @default(false)
+  prix                         Float?
+  prixAncien                   Float?
+  dateDerniereModificationPrix DateTime?
+  frequencePaiement            String?
+  chargesIncluses              Boolean            @default(false)
+  caution                      Int?
+  disponibleLe                 DateTime?
+  photos                       String[]
+  videoUrl                     String?
+  nbVues                       Int                @default(0)
+  nbFavoris                    Int                @default(0)
+  actif                        Boolean            @default(true)
+  statutAnnonce                StatutAnnonce      @default(BROUILLON)
+  noteAdmin                    String?
+  estPremium                   Boolean            @default(false)
+  estMisEnAvant                Boolean            @default(false)
+  dateDebutPromotion           DateTime?
+  dateFinPromotion             DateTime?
+  positionRotation             Int                @default(0)
+  dernierAffichage             DateTime?
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+  publishedAt                  DateTime?
+  bailInvitations              BailInvitation[]
+  bails                        BailLocation[]
+  proprietaire                 Proprietaire       @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+  quartierRel                  Quartier?          @relation(fields: [quartierId], references: [id])
+  statutBien                   StatutBien?        @relation(fields: [statutBienId], references: [id])
+  typeLogement                 TypeLogement?      @relation(fields: [typeLogementId], references: [id])
+  typeTransaction              TypeTransaction?   @relation(fields: [typeTransactionId], references: [id])
+  equipements                  BienEquipement[]
+  meubles                      BienMeuble[]
+  champsValeurs                BienChampValeur[]
+  documents                    DocumentBien[]
+  etablissements               Etablissement[]
+  etatsDesLieux                EtatDesLieux[]
+  favoris                      Favori[]
+  promotionHistories           PromotionHistory[]
+  signalements                 Signalement[]
+  transactions                 Transaction[]
+  vues                         VueBien[]
+
+  @@index([proprietaireId])
+  @@index([typeLogementId])
+  @@index([typeTransactionId])
+  @@index([statutBienId])
+  @@index([statutAnnonce])
+  @@index([actif])
+  @@index([createdAt])
+  @@index([statutAnnonce, actif])
+  @@index([statutAnnonce, createdAt])
+  @@index([statutAnnonce, ville])
+  @@index([statutAnnonce, typeLogementId])
+  @@index([statutAnnonce, typeTransactionId])
+  @@index([statutAnnonce, prix])
+  @@index([ville, quartier])
+  @@index([latitude, longitude])
+}
+
+model ComptePublic {
+  id             String                     @id @default(uuid())
+  nom            String
+  prenom         String
+  telephone      String                     @unique
+  email          String?                    @unique
+  password       String
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  locataireId    String?                    @unique
+  proprietaireId String?                    @unique
+  locataire      Locataire?                 @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+  proprietaire   Proprietaire?              @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+  refreshTokens  ComptePublicRefreshToken[]
+  favoris        Favori[]
+  signalements   Signalement[]
+  alertes        Alerte[]
+}
+
+model ComptePublicRefreshToken {
+  id             String       @id @default(uuid())
+  comptePublicId String
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  comptePublic   ComptePublic @relation(fields: [comptePublicId], references: [id], onDelete: Cascade)
+
+  @@index([comptePublicId])
+  @@index([tokenHash])
+}
+
+model Favori {
+  id             String       @id @default(uuid())
+  comptePublicId String
+  bienId         String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  bien           Bien         @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  comptePublic   ComptePublic @relation(fields: [comptePublicId], references: [id], onDelete: Cascade)
+
+  @@unique([comptePublicId, bienId])
+  @@index([comptePublicId])
+}
+
+model VueBien {
+  id        String   @id @default(uuid())
+  bienId    String
+  userId    String?
+  ipAddress String
+  createdAt DateTime @default(now())
+  bien      Bien     @relation(fields: [bienId], references: [id], onDelete: Cascade)
+
+  @@index([bienId])
+  @@index([bienId, createdAt])
+  @@index([ipAddress, bienId])
+}
+
+model BienEquipement {
+  bienId       String
+  equipementId String
+  bien         Bien       @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  equipement   Equipement @relation(fields: [equipementId], references: [id])
+
+  @@unique([bienId, equipementId])
+}
+
+model BienMeuble {
+  bienId   String
+  meubleId String
+  quantite Int    @default(1)
+  bien     Bien   @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  meuble   Meuble @relation(fields: [meubleId], references: [id])
+
+  @@unique([bienId, meubleId])
+}
+
+model DocumentBien {
+  id             String       @id @default(uuid())
+  bienId         String
+  proprietaireId String
+  nom            String
+  type           String
+  url            String
+  taille         Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  bien           Bien         @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  proprietaire   Proprietaire @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([bienId])
+  @@index([proprietaireId])
+}
+
+model Etablissement {
+  id        String   @id @default(uuid())
+  bienId    String
+  type      String
+  nom       String?
+  latitude  Float
+  longitude Float
+  distance  Float?
+  createdAt DateTime @default(now())
+  bien      Bien     @relation(fields: [bienId], references: [id], onDelete: Cascade)
+
+  @@index([bienId])
+  @@index([type])
+}
+
+model Locataire {
+  id                       String                        @id @default(uuid())
+  proprietaireId           String
+  nom                      String
+  prenom                   String
+  telephone                String
+  email                    String?
+  nbOccupants              Int                           @default(1)
+  presenceEnfants          Boolean                       @default(false)
+  dateNaissance            DateTime?
+  lieuNaissance            String?
+  nationalite              String?
+  sexe                     String?
+  numPieceIdentite         String?
+  typePiece                TypePieceIdentite?
+  dateDelivrance           DateTime?
+  dateExpirationPiece      DateTime?
+  autoriteDelivrance       String?
+  situationProfessionnelle String?
+  activationToken          String?                       @unique
+  tokenExpiresAt           DateTime?
+  statut                   StatutLocataire               @default(INVITE)
+  password                 String?
+  estSuspendu              Boolean                       @default(false)
+  motifSuspension          String?
+  dateSuspension           DateTime?
+  suspenduPar              String?
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+  bailInvitations          BailInvitation[]
+  bails                    BailLocation[]
+  comptePublic             ComptePublic?
+  etatsDesLieux            EtatDesLieux[]
+  proprietaire             Proprietaire                  @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+  passwordResetTokens      LocatairePasswordResetToken[]
+  refreshTokens            LocataireRefreshToken[]
+  verification             LocataireVerification?
+  messagesInternes         MessageInterneLocataire[]
+  transactions             Transaction[]
+
+  @@index([proprietaireId])
+  @@index([activationToken])
+}
+
+model LocataireVerification {
+  id                  String                      @id @default(uuid())
+  locataireId         String                      @unique
+  typePiece           String                      @default("CNI")
+  pieceIdentiteRecto  String?
+  pieceIdentiteVerso  String?
+  selfie              String?
+  statut              StatutVerificationLocataire @default(NOT_VERIFIED)
+  conditionsAcceptees Boolean                     @default(false)
+  motifRejet          String?
+  traitePar           String?
+  dateTraitement      DateTime?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  locataire           Locataire                   @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+}
+
+model BailLocation {
+  id                 String            @id @default(uuid())
+  bienId             String
+  locataireId        String
+  proprietaireId     String
+  typeBail           String?
+  dateDebutBail      DateTime
+  dateFinBail        DateTime?
+  renouvellement     Boolean           @default(false)
+  montantLoyer       Int
+  montantCaution     Int?
+  cautionVersee      Boolean           @default(false)
+  jourLimitePaiement Int?
+  delaiGrace         Int               @default(5)
+  frequencePaiement  String?
+  statut             StatutBail        @default(EN_ATTENTE)
+  motifResiliation   String?
+  initiePar          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  bien               Bien              @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  locataire          Locataire         @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+  proprietaire       Proprietaire      @relation(fields: [proprietaireId], references: [id])
+  contrat            Contrat?
+  depotCaution       DepotCaution?
+  echeancier         EcheancierLoyer[]
+  etatsDesLieux      EtatDesLieux[]
+  transactions       Transaction[]
+
+  @@index([bienId])
+  @@index([locataireId])
+  @@index([proprietaireId])
+  @@index([statut])
+}
+
+model EcheancierLoyer {
+  id                        String         @id @default(uuid())
+  bailId                    String
+  bienId                    String
+  proprietaireId            String
+  locataireId               String
+  dateEcheance              DateTime
+  montant                   Int
+  statut                    StatutPaiement @default(A_VENIR)
+  datePaiement              DateTime?
+  modePaiement              String?
+  reference                 String?
+  note                      String?
+  sourceEnregistrement      String?
+  commissionTaux            Float?
+  commissionMontant         Float?
+  montantNet                Float?
+  confirmeParProprietaire   Boolean        @default(false)
+  dateConfirmation          DateTime?
+  confirmeParLocataire      Boolean        @default(false)
+  dateConfirmationLocataire DateTime?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  bail                      BailLocation   @relation(fields: [bailId], references: [id], onDelete: Cascade)
+  quittance                 Quittance?
+  transactions              Transaction[]
+
+  @@index([bailId])
+  @@index([bienId])
+  @@index([statut])
+  @@index([dateEcheance])
+}
+
+model Quittance {
+  id             String          @id @default(uuid())
+  echeanceId     String          @unique
+  bailId         String
+  bienId         String
+  proprietaireId String
+  locataireId    String
+  numero         String
+  dateGeneration DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  echeance       EcheancierLoyer @relation(fields: [echeanceId], references: [id], onDelete: Cascade)
+
+  @@index([bailId])
+  @@index([bienId])
+  @@index([locataireId])
+}
+
+model Notification {
+  id             String             @id @default(uuid())
+  type           TypeNotification
+  canal          String             @default("SMS")
+  destinataire   String
+  sujet          String?
+  contenu        String
+  statut         StatutNotification @default(EN_ATTENTE)
+  messageRetour  String?
+  echeanceId     String?
+  bailId         String?
+  bienId         String?
+  proprietaireId String?
+  locataireId    String?
+  envoyeAt       DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  lu             Boolean            @default(false)
+
+  @@index([bailId])
+  @@index([echeanceId])
+  @@index([locataireId])
+  @@index([proprietaireId])
+  @@index([type])
+  @@index([statut])
+  @@index([lu])
+}
+
+model DepotCaution {
+  id              String       @id @default(uuid())
+  bailId          String       @unique
+  bienId          String
+  proprietaireId  String
+  locataireId     String
+  montant         Int
+  statut          StatutDepot  @default(RECU)
+  dateReception   DateTime     @default(now())
+  dateRestitution DateTime?
+  montantRestitue Int?
+  motifRetenue    String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  bail            BailLocation @relation(fields: [bailId], references: [id], onDelete: Cascade)
+
+  @@index([bailId])
+  @@index([bienId])
+}
+
+model ModeleContrat {
+  id        String    @id @default(uuid())
+  titre     String
+  typeBail  String?
+  contenu   String
+  actif     Boolean   @default(true)
+  ordre     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contrats  Contrat[]
+}
+
+model Contrat {
+  id        String         @id @default(uuid())
+  bailId    String         @unique
+  modeleId  String?
+  titre     String
+  contenu   String
+  statut    StatutContrat  @default(BROUILLON)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  bail      BailLocation   @relation(fields: [bailId], references: [id], onDelete: Cascade)
+  modele    ModeleContrat? @relation(fields: [modeleId], references: [id])
+
+  @@index([bailId])
+  @@index([modeleId])
+}
+
+model LocataireRefreshToken {
+  id          String    @id @default(uuid())
+  locataireId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  locataire   Locataire @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+
+  @@index([locataireId])
+  @@index([tokenHash])
+}
+
+model LocatairePasswordResetToken {
+  id          String    @id @default(uuid())
+  locataireId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  locataire   Locataire @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+
+  @@index([locataireId])
+  @@index([tokenHash])
+}
+
+model VerificationDocuments {
+  id                  String       @id @default(uuid())
+  proprietaireId      String       @unique
+  typePiece           String       @default("CNI")
+  pieceIdentiteRecto  String?
+  pieceIdentiteVerso  String?
+  selfie              String?
+  conditionsAcceptees Boolean      @default(false)
+  motifRejet          String?
+  traitePar           String?
+  dateTraitement      DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  proprietaire        Proprietaire @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+}
+
+model Proprietaire {
+  id                    String                     @id @default(uuid())
+  prenom                String
+  nom                   String
+  sexe                  String?
+  telephone             String                     @unique
+  email                 String?                    @unique
+  password              String
+  statutVerification    StatutVerification         @default(NOT_VERIFIED)
+  verifiedAt            DateTime?
+  telephoneVerifie      Boolean                    @default(false)
+  telephoneOtp          String?
+  telephoneOtpExpiresAt DateTime?
+  estSuspendu           Boolean                    @default(false)
+  motifSuspension       String?
+  dateSuspension        DateTime?
+  dateFinSuspension     DateTime?
+  suspenduPar           String?
+  nbSignalementsValides Int                        @default(0)
+  canauxNotification    String[]                   @default(["SMS"])
+  canauxNotificationPayes Boolean                  @default(false)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  bailInvitations       BailInvitation[]
+  bails                 BailLocation[]
+  biens                 Bien[]
+  comptePublic          ComptePublic?
+  documentsBien         DocumentBien[]
+  etatsDesLieux         EtatDesLieux[]
+  locataire             Locataire[]
+  messagesInternes      MessageInterne[]
+  passwordResetTokens   PasswordResetToken[]
+  promotionHistories    PromotionHistory[]
+  refreshTokens         ProprietaireRefreshToken[]
+  transactions          Transaction[]
+  verification          VerificationDocuments?
+}
+
+model MessageInterne {
+  id             String       @id @default(uuid())
+  proprietaireId String
+  bailId         String?
+  bienId         String?
+  titre          String
+  corps          String
+  type           String       @default("INFO")
+  lu             Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  proprietaire   Proprietaire @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([proprietaireId])
+  @@index([createdAt])
+}
+
+model MessageInterneLocataire {
+  id          String    @id @default(uuid())
+  locataireId String
+  bailId      String?
+  bienId      String?
+  titre       String
+  corps       String
+  type        String    @default("INFO")
+  lu          Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  locataire   Locataire @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+
+  @@index([locataireId])
+  @@index([createdAt])
+}
+
+model ProprietaireRefreshToken {
+  id             String       @id @default(uuid())
+  proprietaireId String
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  proprietaire   Proprietaire @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([proprietaireId])
+  @@index([tokenHash])
+}
+
+model PasswordResetToken {
+  id             String       @id @default(uuid())
+  proprietaireId String
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+  proprietaire   Proprietaire @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([proprietaireId])
+  @@index([tokenHash])
+}
+
+model Admin {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  adminId   String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([tokenHash])
+}
+
+model Alerte {
+  id              String        @id @default(uuid())
+  telephone       String
+  comptePublicId  String?
+  ville           String?
+  quartier        String?
+  typeLogement    String?
+  typeTransaction String?
+  prixMin         Int?
+  prixMax         Int?
+  canalPrefere    String        @default("SMS")
+  statut          StatutAlerte  @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  comptePublic    ComptePublic? @relation(fields: [comptePublicId], references: [id], onDelete: Cascade)
+
+  @@index([telephone])
+  @@index([statut])
+  @@index([comptePublicId])
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  proprietaireId   String
+  type             TypePaiement
+  statut           StatutTransaction @default(EN_ATTENTE)
+  montant          Float
+  devise           String            @default("XOF")
+  modePaiement     String
+  provider         String?
+  reference        String?
+  transactionId    String?
+  dateInitiation   DateTime          @default(now())
+  dateConfirmation DateTime?
+  dateEcheance     DateTime?
+  bienId           String?
+  bailId           String?
+  echeanceId       String?
+  locataireId      String?
+  note             String?
+  instructions     String?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  bail             BailLocation?     @relation(fields: [bailId], references: [id])
+  bien             Bien?             @relation(fields: [bienId], references: [id])
+  echeance         EcheancierLoyer?  @relation(fields: [echeanceId], references: [id])
+  locataire        Locataire?        @relation(fields: [locataireId], references: [id])
+  proprietaire     Proprietaire      @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([proprietaireId])
+  @@index([type])
+  @@index([statut])
+  @@index([bienId])
+  @@index([bailId])
+  @@index([dateInitiation])
+  @@index([transactionId])
+}
+
+model Temoignage {
+  id         String   @id @default(uuid())
+  nom        String
+  profession String?
+  temoignage String
+  actif      Boolean  @default(false)
+  ordre      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([actif])
+}
+
+model PageLegale {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  titre     String
+  contenu   String   @db.Text
+  publie    Boolean  @default(true)
+  version   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model PromotionHistory {
+  id               String          @id @default(uuid())
+  bienId           String
+  proprietaireId   String
+  transactionId    String?
+  formuleId        String
+  formuleNom       String
+  dureeJours       Int
+  montant          Float
+  dateDebut        DateTime
+  dateFin          DateTime
+  dateFinReelle    DateTime?
+  modePaiement     String?
+  reference        String?
+  note             String?
+  confirmeParAdmin Boolean         @default(false)
+  dateConfirmation DateTime?
+  statut           StatutPromotion @default(ACTIVE)
+  motifArret       String?
+  joursRestants    Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  bien             Bien            @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  proprietaire     Proprietaire    @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([bienId])
+  @@index([proprietaireId])
+  @@index([statut])
+  @@index([dateDebut])
+}
+
+model ConfigMonetisation {
+  id                String   @id @default("config")
+  miseEnAvantActive Boolean  @default(false)
+  commissionActive  Boolean  @default(false)
+  tauxCommission    Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ConfigSite {
+  id                 String   @id @default("config_site")
+  contactEmail       String   @default("contact@seek.sn")
+  contactPhone       String   @default("+221 77 000 00 00")
+  contactAddress     String   @default("Dakar, Sénégal")
+  serviceClientHours Json     @default("[{\"day\": \"lundi\", \"open\": \"08:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"mardi\", \"open\": \"08:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"mercredi\", \"open\": \"08:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"jeudi\", \"open\": \"08:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"vendredi\", \"open\": \"08:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"samedi\", \"open\": \"09:00\", \"close\": \"18:00\", \"isOpen\": true}, {\"day\": \"dimanche\", \"open\": \"09:00\", \"close\": \"13:00\", \"isOpen\": false}]")
+  logoFiligrane      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model BailInvitation {
+  id                 String               @id @default(uuid())
+  bienId             String
+  locataireId        String
+  proprietaireId     String
+  typeBail           String?
+  dateDebutBail      DateTime
+  dateFinBail        DateTime?
+  montantLoyer       Int
+  montantCaution     Int?
+  cautionVersee      Boolean              @default(false)
+  jourLimitePaiement Int?
+  renouvellement     Boolean              @default(true)
+  frequencePaiement  String?
+  token              String               @unique @default(uuid())
+  statut             StatutBailInvitation @default(PENDING)
+  expiresAt          DateTime
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  bien               Bien                 @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  locataire          Locataire            @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+  proprietaire       Proprietaire         @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+
+  @@index([locataireId])
+  @@index([proprietaireId])
+  @@index([token])
+  @@index([statut])
+}
+
+model Signalement {
+  id             String            @id @default(uuid())
+  bienId         String
+  comptePublicId String?
+  nom            String
+  telephone      String
+  motif          MotifSignalement
+  commentaire    String?
+  statut         StatutSignalement @default(EN_ATTENTE)
+  traitePar      String?
+  dateTraitement DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  bien           Bien              @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  comptePublic   ComptePublic?     @relation(fields: [comptePublicId], references: [id])
+
+  @@index([bienId])
+  @@index([comptePublicId])
+  @@index([statut])
+  @@index([telephone])
+}
+
+model EtatDesLieux {
+  id              String              @id @default(uuid())
+  bailId          String
+  bienId          String
+  proprietaireId  String
+  locataireId     String
+  type            TypeEtatDesLieux
+  statut          StatutEtatDesLieux  @default(BROUILLON)
+  dateRealisation DateTime            @default(now())
+  dateValidation  DateTime?
+  documentPdf     String?
+  nbCles          Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  bail            BailLocation        @relation(fields: [bailId], references: [id], onDelete: Cascade)
+  bien            Bien                @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  locataire       Locataire           @relation(fields: [locataireId], references: [id], onDelete: Cascade)
+  proprietaire    Proprietaire        @relation(fields: [proprietaireId], references: [id], onDelete: Cascade)
+  pieces          PieceEtatDesLieux[]
+
+  @@unique([bailId, type])
+  @@index([bienId])
+  @@index([proprietaireId])
+  @@index([locataireId])
+  @@index([statut])
+}
+
+model PieceEtatDesLieux {
+  id             String                @id @default(uuid())
+  etatDesLieuxId String
+  nom            String
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  elements       ElementEtatDesLieux[]
+  etatDesLieux   EtatDesLieux          @relation(fields: [etatDesLieuxId], references: [id], onDelete: Cascade)
+
+  @@index([etatDesLieuxId])
+}
+
+model ElementEtatDesLieux {
+  id                 String                     @id @default(uuid())
+  pieceId            String
+  nom                String
+  etat               EtatElement
+  commentaire        String?
+  photos             String[]
+  estConteste        Boolean                    @default(false)
+  motifContestation  String?
+  photoContestation  String?
+  statutContestation StatutContestationElement?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  piece              PieceEtatDesLieux          @relation(fields: [pieceId], references: [id], onDelete: Cascade)
+
+  @@index([pieceId])
+}
+
+enum StatutAnnonce {
+  BROUILLON
+  EN_ATTENTE
+  PUBLIE
+  REJETE
+  ANNULE
+}
+
+enum StatutLocataire {
+  INVITE
+  ACTIF
+  INACTIF
+  ANCIEN
+}
+
+enum StatutBail {
+  EN_ATTENTE
+  ACTIF
+  EN_PREAVIS
+  EN_RENOUVELLEMENT
+  TERMINE
+  RESILIE
+  ARCHIVE
+}
+
+enum TypePieceIdentite {
+  CNI
+  PASSEPORT
+  CARTE_CONSULAIRE
+  AUTRE
+}
+
+enum StatutVerificationLocataire {
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum StatutPaiement {
+  A_VENIR
+  EN_ATTENTE
+  EN_RETARD
+  EN_ATTENTE_CONFIRMATION
+  PAYE
+  ANNULE
+}
+
+enum StatutNotification {
+  EN_ATTENTE
+  ENVOYE
+  ECHEC
+}
+
+enum TypeNotification {
+  RAPPEL_LOYER
+  CONFIRMATION_PAIEMENT
+  ALERTE_RETARD
+  INITIATION_PAIEMENT
+  VERIFICATION_LOCATAIRE
+  PAIEMENT_LOCATAIRE
+  PREAVIS
+  RESILIATION
+  FIN_BAIL
+  CONTRAT
+  RESET_PASSWORD
+  ALERTE
+  VERIFICATION_TELEPHONE
+  PAIEMENT_ESPECES_LOCATAIRE
+  CONFIRMATION_ESPECES_PROPRIETAIRE
+  ETAT_DES_LIEUX_DISPONIBLE
+  ETAT_DES_LIEUX_VALIDE
+  ETAT_DES_LIEUX_MODIFIE
+  ANNONCE_VALIDEE
+  ANNONCE_REJETEE
+}
+
+enum StatutDepot {
+  RECU
+  RESTITUE
+  PARTIELLEMENT_RESTITUE
+  RETENU
+}
+
+enum StatutContrat {
+  BROUILLON
+  ACTIF
+  ARCHIVE
+}
+
+enum StatutVerification {
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum StatutAlerte {
+  ACTIVE
+  DESACTIVE
+}
+
+enum TypePaiement {
+  PAIEMENT_LOYER
+  PAIEMENT_PREMIUM
+  PAIEMENT_PROMOTION
+  REMBOURSEMENT
+  RESTITUTION_CAUTION
+  COMMISSION_LOYER
+  MISE_EN_AVANT
+  PAIEMENT_CANAUX_NOTIFICATION
+}
+
+enum StatutTransaction {
+  EN_ATTENTE
+  CONFIRME
+  ECHEC
+  ANNULE
+  REMBOURSE
+}
+
+enum StatutPromotion {
+  EN_ATTENTE
+  ACTIVE
+  TERMINEE
+  ARRETEE
+  EXPIREE
+}
+
+enum StatutBailInvitation {
+  PENDING
+  ACCEPTEE
+  REFUSEE
+  EXPIREE
+}
+
+enum MotifSignalement {
+  ARNAQUE
+  INAPPROPRIE
+  INDISPONIBLE
+  FAUSSES_INFOS
+  DOUBLON
+  AUTRE
+}
+
+enum StatutSignalement {
+  EN_ATTENTE
+  VALIDE
+  REJETE
+}
+
+enum TypeEtatDesLieux {
+  ENTREE
+  SORTIE
+}
+
+enum StatutEtatDesLieux {
+  BROUILLON
+  EN_ATTENTE_VALIDATION
+  VALIDE
+  CONTESTE
+  EN_LITIGE
+}
+
+enum StatutContestationElement {
+  EN_ATTENTE
+  RECTIFIE
+  RESERVE
+  REFUSE
+}
+
+enum EtatElement {
+  NEUF
+  BON
+  USAGE
+  MAUVAIS
+  DEGRADE
+}
+
+// ─── Formulaire Dynamique ─────────────────────────────────────────────────────
+
+enum TypeChamp {
+  TEXTE
+  NOMBRE
+  SURFACE
+  PRIX
+  BOOLEEN
+  SELECT
+  DATE
+}
+
+model CategorieChamp {
+  id        String   @id @default(uuid())
+  nom       String   @unique
+  ordre     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  champs    Champ[]
+}
+
+model Champ {
+  id           String              @id @default(uuid())
+  nom          String
+  type         TypeChamp
+  unite        String?
+  options      String[]
+  categorieId  String
+  actif        Boolean             @default(true)
+  /// Quand renseigné, relie ce Champ à une colonne statique de Bien (ex: "nbChambres", "surface")
+  /// au lieu de passer par BienChampValeur. Permet de piloter la visibilité par type de bien
+  /// des champs "cœur" du formulaire via le même système que les champs dynamiques.
+  cleSysteme   String?             @unique
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  categorie    CategorieChamp      @relation(fields: [categorieId], references: [id])
+  typeLogements TypeLogementChamp[]
+  biensValeurs  BienChampValeur[]
+
+  @@unique([nom, categorieId])
+  @@index([categorieId])
+}
+
+model TypeLogementChamp {
+  typeLogementId String
+  champId        String
+  obligatoire    Boolean      @default(false)
+  ordre          Int          @default(0)
+  typeLogement   TypeLogement @relation(fields: [typeLogementId], references: [id], onDelete: Cascade)
+  champ          Champ        @relation(fields: [champId], references: [id], onDelete: Cascade)
+
+  @@unique([typeLogementId, champId])
+  @@index([typeLogementId])
+}
+
+model BienChampValeur {
+  id      String @id @default(uuid())
+  bienId  String
+  champId String
+  valeur  String
+  bien    Bien   @relation(fields: [bienId], references: [id], onDelete: Cascade)
+  champ   Champ  @relation(fields: [champId], references: [id], onDelete: Cascade)
+
+  @@unique([bienId, champId])
+  @@index([bienId])
+}

@@ -1,0 +1,34 @@
+# Keep only the front-end and back-end directories at the repository root.
+/*
+!/front/
+!/back/
+!.gitignore
+
+# Dependencies and generated build output.
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+**/.vercel/
+**/coverage/
+**/.cache/
+**/.turbo/
+**/out/
+
+# Local environment files. Keep safe templates versioned.
+/front/.env
+/front/.env.*
+!/front/.env.example
+!/front/.env.sample
+/back/.env
+/back/.env.*
+!/back/.env.example
+!/back/.env.sample
+
+# Logs, temporary files, and local operating-system artifacts.
+**/*.log
+**/*.tsbuildinfo
+**/*.tmp
+**/*.bak
+**/.DS_Store
+**/Thumbs.db
