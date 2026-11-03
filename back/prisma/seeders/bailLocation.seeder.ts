@@ -14,7 +14,7 @@ import {
 import type { Seeder } from './seeder.interface.js';
 import { pick, randomInt, randomBool, faker } from './utils/random.js';
 
-const TARGET_COUNT = 25;
+const TARGET_COUNT = 5;
 const PIECES_STANDARD = ['Salon', 'Chambre', 'Cuisine', 'Salle de bain'];
 const ELEMENTS_STANDARD = ['Murs', 'Sol', 'Plafond', 'Portes et fenêtres'];
 

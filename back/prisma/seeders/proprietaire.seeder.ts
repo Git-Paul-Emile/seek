@@ -4,7 +4,7 @@ import { StatutVerification } from '../../src/generated/prisma/enums.js';
 import type { Seeder } from './seeder.interface.js';
 import { faker, senegalPhone, randomBool, pastDate } from './utils/random.js';
 
-const TARGET_COUNT = 15;
+const TARGET_COUNT = 5;
 export const DEFAULT_PROPRIETAIRE_PASSWORD = 'Proprio@2024!';
 
 export class ProprietaireSeeder implements Seeder {

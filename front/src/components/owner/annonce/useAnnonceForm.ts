@@ -172,13 +172,20 @@ export function useAnnonceForm() {
   const champsPersonnalises = useMemo(() => (champsType.data ?? []).filter((c) => !c.champ.cleSysteme), [champsType.data]);
 
   // ── Reprise d'un bien existant ou du brouillon en cours ──
+  // Une seule reprise par bien édité, ou une seule en création : le brouillon créé
+  // ensuite par l'enregistrement automatique ne doit pas écraser la saisie en cours.
+  const cleReprise = editId ?? "creation";
   const initialiseRef = useRef<string | null>(null);
   const villeInitialiseeRef = useRef(false);
+  const quartierInitialiseRef = useRef(false);
   useEffect(() => {
-    if (!source || initialiseRef.current === source.id) return;
+    if (initialiseRef.current === cleReprise) return;
+    if (editId ? !bienAModifier : !brouillonCharge) return;
     if (types.isLoading || transactions.isLoading || statuts.isLoading || paysListe.isLoading) return;
-    initialiseRef.current = source.id;
-    villeInitialiseeRef.current = false;
+    initialiseRef.current = cleReprise;
+    villeInitialiseeRef.current = !source;
+    quartierInitialiseRef.current = !source;
+    if (!source) return;
     setBrouillonId(source.id);
     maj({
       ...valeursDepuisBien(source),
@@ -187,7 +194,7 @@ export function useAnnonceForm() {
       statutBien: statuts.data?.find((s) => s.id === source.statutBienId) ?? null,
       pays: paysListe.data?.find((p) => p.nom === source.pays) ?? null,
     });
-  }, [source, maj, types.isLoading, transactions.isLoading, statuts.isLoading, paysListe.isLoading, types.data, transactions.data, statuts.data, paysListe.data]);
+  }, [cleReprise, editId, bienAModifier, brouillonCharge, source, maj, types.isLoading, transactions.isLoading, statuts.isLoading, paysListe.isLoading, types.data, transactions.data, statuts.data, paysListe.data]);
 
   useEffect(() => {
     if (!source?.region || villeInitialiseeRef.current || villes.isLoading || !villes.data?.length) return;
@@ -199,9 +206,12 @@ export function useAnnonceForm() {
   }, [source, maj, villes.data, villes.isLoading]);
 
   useEffect(() => {
-    if (!source?.quartier || quartiers.isLoading || !quartiers.data?.length || v.quartier) return;
+    if (!source?.quartier || quartierInitialiseRef.current || quartiers.isLoading || !quartiers.data?.length || v.quartier) return;
     const quartier = quartiers.data.find((q) => q.nom === source.quartier);
-    if (quartier) maj({ quartier, latitude: quartier.latitude, longitude: quartier.longitude });
+    if (quartier) {
+      maj({ quartier, latitude: quartier.latitude, longitude: quartier.longitude });
+      quartierInitialiseRef.current = true;
+    }
   }, [source, maj, quartiers.data, quartiers.isLoading, v.quartier]);
 
   // ── Modification détectée (une annonce brouillon ou rejetée doit changer avant d'être renvoyée) ──
@@ -467,6 +477,10 @@ export function useAnnonceForm() {
       chargement: types.isLoading || transactions.isLoading || statuts.isLoading,
       villesChargement: villes.isLoading,
       quartiersChargement: quartiers.isLoading,
+      villesErreur: villes.isError,
+      quartiersErreur: quartiers.isError,
+      rechargerVilles: () => void villes.refetch(),
+      rechargerQuartiers: () => void quartiers.refetch(),
     },
     champsSysteme,
     surfaceObligatoire,

@@ -3,9 +3,9 @@ import { TypeNotification, StatutNotification } from '../../src/generated/prisma
 import type { Seeder } from './seeder.interface.js';
 import { pick, randomBool, pastDate } from './utils/random.js';
 
-const NB_NOTIFICATIONS = 60;
-const NB_MESSAGES_PROPRIETAIRE = 20;
-const NB_MESSAGES_LOCATAIRE = 20;
+const NB_NOTIFICATIONS = 10;
+const NB_MESSAGES_PROPRIETAIRE = 10;
+const NB_MESSAGES_LOCATAIRE = 10;
 
 const TYPES_NOTIFICATION = Object.values(TypeNotification);
 

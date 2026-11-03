@@ -5,7 +5,7 @@ import { StatutLocataire, StatutVerificationLocataire, TypePieceIdentite } from 
 import type { Seeder } from './seeder.interface.js';
 import { faker, senegalPhone, randomInt, randomBool, pastDate, futureDate } from './utils/random.js';
 
-const TARGET_COUNT = 30;
+const TARGET_COUNT = 10;
 export const DEFAULT_LOCATAIRE_PASSWORD = 'Locataire@2024!';
 
 const STATUTS_PONDERES: readonly StatutLocataire[] = [

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/NativeSelect";
 import { FieldError } from "@/components/ui/FieldError";
@@ -73,7 +74,10 @@ export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
           ))}
         </NativeSelect>
       </FormField>
-      <FormField label="Région" error={erreurs.region}>
+      <FormField
+        label="Région"
+        error={erreurs.region ?? (listes.villesErreur ? "Les régions n'ont pas pu être chargées." : undefined)}
+      >
         <NativeSelect
           value={v.ville?.id ?? ""}
           disabled={!v.pays || listes.villesChargement}
@@ -87,7 +91,11 @@ export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
           ))}
         </NativeSelect>
       </FormField>
-      <FormField label="Quartier" error={erreurs.quartier}>
+      {listes.villesErreur && <BoutonRecharger onClick={listes.rechargerVilles} />}
+      <FormField
+        label="Quartier"
+        error={erreurs.quartier ?? (listes.quartiersErreur ? "Les quartiers n'ont pas pu être chargés." : undefined)}
+      >
         <NativeSelect
           value={v.quartier?.id ?? ""}
           disabled={!v.ville || listes.quartiersChargement}
@@ -104,6 +112,7 @@ export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
           ))}
         </NativeSelect>
       </FormField>
+      {listes.quartiersErreur && <BoutonRecharger onClick={listes.rechargerQuartiers} />}
       <FormField label="Adresse" hint="(facultatif)" help="Elle sert à placer le bien sur la carte, elle n'est pas affichée en entier.">
         <Input value={v.adresse} onChange={(e) => maj({ adresse: e.target.value })} placeholder="12 rue de Thiong" />
       </FormField>
@@ -206,5 +215,13 @@ export function EtapeCaracteristiques({ form }: { form: AnnonceForm }) {
         <p className="text-body-l text-texte2">Aucune caractéristique à renseigner pour ce type de bien.</p>
       )}
     </div>
+  );
+}
+
+function BoutonRecharger({ onClick }: { onClick: () => void }) {
+  return (
+    <Button type="button" variant="link" onClick={onClick} className="-mt-3">
+      Réessayer le chargement
+    </Button>
   );
 }

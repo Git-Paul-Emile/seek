@@ -4,9 +4,9 @@ import { StatutLocataire } from '../../src/generated/prisma/enums.js';
 import type { Seeder } from './seeder.interface.js';
 import { faker, senegalPhone, pickMany } from './utils/random.js';
 
-const NB_LIES_LOCATAIRE = 8;
-const NB_LIES_PROPRIETAIRE = 5;
-const NB_VISITEURS = 7;
+const NB_LIES_LOCATAIRE = 4;
+const NB_LIES_PROPRIETAIRE = 3;
+const NB_VISITEURS = 3;
 
 export class ComptePublicSeeder implements Seeder {
   readonly name = 'ComptePublicSeeder';

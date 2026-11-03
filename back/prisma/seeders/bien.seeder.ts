@@ -3,7 +3,7 @@ import { StatutAnnonce, TypeChamp } from '../../src/generated/prisma/enums.js';
 import type { Seeder } from './seeder.interface.js';
 import { faker, pick, pickMany, randomInt, randomBool, pastDate, futureDate } from './utils/random.js';
 
-const TARGET_COUNT = 60;
+const TARGET_COUNT = 10;
 
 const STATUTS_PONDERES: readonly StatutAnnonce[] = [
   ...Array(6).fill(StatutAnnonce.PUBLIE),

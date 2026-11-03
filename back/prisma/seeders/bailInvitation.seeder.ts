@@ -3,7 +3,7 @@ import { StatutBailInvitation, StatutLocataire } from '../../src/generated/prism
 import type { Seeder } from './seeder.interface.js';
 import { pick, randomInt, randomBool, pastDate, futureDate } from './utils/random.js';
 
-const TARGET_COUNT = 20;
+const TARGET_COUNT = 5;
 
 const STATUTS_PONDERES: readonly StatutBailInvitation[] = [
   StatutBailInvitation.PENDING,

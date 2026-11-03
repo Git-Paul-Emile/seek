@@ -3,10 +3,10 @@ import { MotifSignalement, StatutSignalement, StatutAlerte } from '../../src/gen
 import type { Seeder } from './seeder.interface.js';
 import { faker, pick, pickMany, randomInt, senegalPhone, pastDate } from './utils/random.js';
 
-const NB_FAVORIS = 50;
-const NB_VUES = 200;
-const NB_SIGNALEMENTS = 12;
-const NB_ALERTES = 15;
+const NB_FAVORIS = 10;
+const NB_VUES = 10;
+const NB_SIGNALEMENTS = 5;
+const NB_ALERTES = 5;
 
 export class EngagementSeeder implements Seeder {
   readonly name = 'EngagementSeeder';
@@ -34,9 +34,6 @@ export class EngagementSeeder implements Seeder {
             data: {
               comptePublicId: compte.id,
               bienId: bien.id,
-              prixSnapshot: bien.prix ?? undefined,
-              statutSnapshot: bien.statutAnnonce,
-              actifSnapshot: bien.actif,
             },
           });
           created++;

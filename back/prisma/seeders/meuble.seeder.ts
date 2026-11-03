@@ -1,5 +1,6 @@
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import type { Seeder } from './seeder.interface.js';
+import { limiter } from './utils/limite.js';
 
 const MEUBLES: readonly { nom: string; categorie: string }[] = [
   // ── SALON / ESPACE DE VIE ────────────────────────────────────────────────
@@ -53,7 +54,7 @@ export class MeubleSeeder implements Seeder {
     const categorieMap = new Map(categories.map(c => [c.nom, c.id]));
 
     const meubleIds: string[] = [];
-    for (const meuble of MEUBLES) {
+    for (const meuble of limiter(MEUBLES)) {
       const categorieId = categorieMap.get(meuble.categorie);
       if (!categorieId) {
         console.log(`  ⚠ Catégorie introuvable : ${meuble.categorie}`);
@@ -74,13 +75,10 @@ export class MeubleSeeder implements Seeder {
     // ne s'applique pas à un type donné depuis /admin/biens/types/:id/champs.
     const typeLogements = await prisma.typeLogement.findMany({ select: { id: true } });
     for (const { id: typeLogementId } of typeLogements) {
-      for (const meubleId of meubleIds) {
-        await prisma.typeLogementMeuble.upsert({
-          where: { typeLogementId_meubleId: { typeLogementId, meubleId } },
-          update: {},
-          create: { typeLogementId, meubleId },
-        });
-      }
+      await prisma.typeLogementMeuble.createMany({
+        data: meubleIds.map((meubleId) => ({ typeLogementId, meubleId })),
+        skipDuplicates: true,
+      });
     }
   }
 }

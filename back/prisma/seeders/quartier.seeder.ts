@@ -1,5 +1,7 @@
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import type { Seeder } from './seeder.interface.js';
+import { limiter } from './utils/limite.js';
+import { VILLES_SENEGAL } from './data/villes-senegal.data.js';
 import { QUARTIERS_SENEGAL } from './data/quartiers-senegal.data.js';
 
 const CODE_PAYS_SENEGAL = 'SN';
@@ -8,7 +10,7 @@ const CODE_PAYS_SENEGAL = 'SN';
 const TAILLE_LOT = 500;
 
 /**
- * Insère les 25 515 quartiers du Sénégal, rattachés à leur ville (commune).
+ * Insère les quartiers des villes seedées (LIMITE_SEED quartiers maximum par ville).
  *
  * Idempotent et non destructif :
  *  - les quartiers obsolètes d'une ville sont supprimés UNIQUEMENT s'ils ne
@@ -44,12 +46,16 @@ export class QuartierSeeder implements Seeder {
     let totalSupprime = 0;
     const villesIntrouvables: string[] = [];
 
-    for (const entree of QUARTIERS_SENEGAL) {
+    const villesSeedees = new Set(limiter(VILLES_SENEGAL).map((v) => v.nom));
+    const entrees = QUARTIERS_SENEGAL.filter((e) => villesSeedees.has(e.ville));
+
+    for (const entree of entrees) {
       const villeId = idParNom.get(entree.ville);
+      const quartiers = limiter(entree.quartiers);
 
       if (!villeId) {
         villesIntrouvables.push(entree.ville);
-        totalIgnore += entree.quartiers.length;
+        totalIgnore += quartiers.length;
         continue;
       }
 
@@ -58,8 +64,8 @@ export class QuartierSeeder implements Seeder {
       });
       totalSupprime += supprimes;
 
-      for (let i = 0; i < entree.quartiers.length; i += TAILLE_LOT) {
-        const lot = entree.quartiers.slice(i, i + TAILLE_LOT).map((q) => ({
+      for (let i = 0; i < quartiers.length; i += TAILLE_LOT) {
+        const lot = quartiers.slice(i, i + TAILLE_LOT).map((q) => ({
           nom:       q.nom,
           villeId,
           latitude:  q.latitude,
