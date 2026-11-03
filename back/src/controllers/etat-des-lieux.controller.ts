@@ -129,8 +129,7 @@ export const validate = async (req: Request, res: Response, next: NextFunction) 
   try {
     const locataireId = req.locataire!.id;
     const id = req.params.id as string;
-    const { documentPdf } = req.body;
-    const result = await EtatDesLieuxService.validerEtatDesLieux(id, locataireId, documentPdf);
+    const result = await EtatDesLieuxService.validerEtatDesLieux(id, locataireId);
     res.status(StatusCodes.OK).json({ success: true, data: result });
   } catch (err) {
     next(err);

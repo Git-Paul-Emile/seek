@@ -5,6 +5,8 @@ import * as EtatDesLieuxRepo from "../repositories/etat-des-lieux.repository.js"
 import { prisma } from "../config/database.js";
 import * as SmsService from "./sms.service.js";
 import { envoyerNotification } from "./notification.service.js";
+import * as CloudinaryService from "./cloudinary.service.js";
+import { genererPdfEtatDesLieux } from "./etatDesLieuxPdf.service.js";
 
 const FRONTEND_URL = getFrontendBaseUrl();
 
@@ -225,7 +227,20 @@ export const resoudreContestationsProprietaire = async (
   return updated;
 };
 
-export const validerEtatDesLieux = async (id: string, locataireId: string, documentPdfUrl?: string) => {
+/** PDF signé déposé sur Cloudinary ; null si la génération ou l'envoi échoue. */
+const deposerPdfSigne = async (edl: NonNullable<Awaited<ReturnType<typeof EtatDesLieuxRepo.findById>>>, signeLe: Date) => {
+  try {
+    const pdf = await genererPdfEtatDesLieux(edl, signeLe);
+    const { url } = await CloudinaryService.uploadFile(pdf, "seek/etats-des-lieux/signes", `etat-des-lieux-${edl.id}`);
+    return url;
+  } catch (erreur) {
+    // La signature reste enregistrée en base : le PDF est une copie, il n'en conditionne pas la validité.
+    console.error("Erreur génération PDF état des lieux", edl.id, erreur);
+    return null;
+  }
+};
+
+export const validerEtatDesLieux = async (id: string, locataireId: string) => {
   const edl = await EtatDesLieuxRepo.findById(id);
   if (!edl) throw new AppError("État des lieux introuvable", StatusCodes.NOT_FOUND);
   if (edl.locataireId !== locataireId) throw new AppError("Accès refusé", StatusCodes.FORBIDDEN);
@@ -234,7 +249,10 @@ export const validerEtatDesLieux = async (id: string, locataireId: string, docum
     throw new AppError("L'état des lieux n'est pas en attente de validation", StatusCodes.BAD_REQUEST);
   }
 
-  const updated = await EtatDesLieuxRepo.updateStatus(id, "VALIDE", documentPdfUrl);
+  // Le document signé est produit par le serveur à partir des données enregistrées ;
+  // aucune URL fournie par le navigateur n'est acceptée.
+  const documentPdfUrl = await deposerPdfSigne(edl, new Date());
+  const updated = await EtatDesLieuxRepo.updateStatus(id, "VALIDE", documentPdfUrl ?? undefined);
 
   // Notifier le propriétaire
   if (edl.proprietaire?.telephone) {

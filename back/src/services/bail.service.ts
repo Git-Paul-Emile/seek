@@ -4,6 +4,13 @@ import * as BailRepo from "../repositories/bail.repository.js";
 import { prisma } from "../config/database.js";
 import type { EcheancierLoyerCreateManyInput } from "../generated/prisma/models/EcheancierLoyer.js";
 import { genererQuittanceInterne } from "./quittance.service.js";
+import type { StatutBail } from "../generated/prisma/enums.js";
+
+/**
+ * Un bail en préavis ou en renouvellement court toujours : le locataire garde l'accès à son
+ * échéancier, à son contrat et à son propriétaire, et le loyer reste dû jusqu'à la fin.
+ */
+export const STATUTS_BAIL_EN_COURS: StatutBail[] = ["ACTIF", "EN_PREAVIS", "EN_RENOUVELLEMENT"];
 import {
   envoyerConfirmationPaiement,
   envoyerConfirmationPaiementProprietaire,
@@ -953,11 +960,11 @@ export const payerEcheancesLocataire = async (
     note?: string;
   }
 ) => {
-  // Récupérer le bail actif du locataire
+  // Bail en cours du locataire : le loyer reste dû pendant le préavis.
   const bail = await prisma.bailLocation.findFirst({
-    where: { locataireId, statut: "ACTIF" },
+    where: { locataireId, statut: { in: STATUTS_BAIL_EN_COURS } },
   });
-  if (!bail) throw new AppError("Aucun bail actif trouvé", StatusCodes.BAD_REQUEST);
+  if (!bail) throw new AppError("Aucun bail en cours trouvé", StatusCodes.BAD_REQUEST);
 
   // Récupérer les N premières échéances non payées dans l'ordre chronologique
   const unpaid = await prisma.echeancierLoyer.findMany({
@@ -1632,7 +1639,7 @@ export const activerBail = async (
 
 export const getEcheancierForLocataire = async (locataireId: string) => {
   const bail = await prisma.bailLocation.findFirst({
-    where: { locataireId, statut: "ACTIF" },
+    where: { locataireId, statut: { in: STATUTS_BAIL_EN_COURS } },
   });
   if (!bail) return [];
 
@@ -1657,7 +1664,7 @@ export const getEcheancierForLocataire = async (locataireId: string) => {
 export const getContratForLocataire = async (locataireId: string) => {
   // Récupérer le bail actif du locataire
   const bail = await prisma.bailLocation.findFirst({
-    where: { locataireId, statut: "ACTIF" },
+    where: { locataireId, statut: { in: STATUTS_BAIL_EN_COURS } },
     include: {
       bien: {
         select: {
@@ -1723,7 +1730,7 @@ export const getContratForLocataire = async (locataireId: string) => {
 export const getProprietaireForLocataire = async (locataireId: string) => {
   // Récupérer le bail actif du locataire
   const bail = await prisma.bailLocation.findFirst({
-    where: { locataireId, statut: "ACTIF" },
+    where: { locataireId, statut: { in: STATUTS_BAIL_EN_COURS } },
     include: {
       bien: {
         select: {

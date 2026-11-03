@@ -701,7 +701,7 @@ export const getDocumentsBien = async (req: Request, res: Response): Promise<voi
 
   // Trouver le bail actif
   const bailActif = await prisma.bailLocation.findFirst({
-    where: { locataireId: req.locataire.id, statut: "ACTIF" },
+    where: { locataireId: req.locataire.id, statut: { in: BailService.STATUTS_BAIL_EN_COURS } },
     select: { bienId: true },
   });
 
