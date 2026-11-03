@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { usePublicSession } from "@/hooks/usePublicSession";
 
 // Encart propriétaires : l'unique aplat Soleil de l'accueil (publiez, gérez, encaissez).
 // Chaque promesse correspond à une fonction livrée : modération, baux et états des lieux,
@@ -11,7 +12,10 @@ const ETAPES = [
   { titre: "Encaissez", texte: "Rappels automatiques avant l'échéance et quittances en PDF." },
 ];
 
-const OwnerStepsSection = () => (
+const OwnerStepsSection = () => {
+  const { commencerHref, isOwnerAuth } = usePublicSession();
+  const libelle = isOwnerAuth ? "Aller à mon tableau de bord" : "Commencer gratuitement";
+  return (
   <section className="pb-12 lg:pb-20" aria-labelledby="proprietaires-titre">
     <div className="container">
       <div className="rounded-sheet bg-soleil p-6 text-encre lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:p-12">
@@ -25,7 +29,7 @@ const OwnerStepsSection = () => (
             geste.
           </p>
           <Button asChild size="lg" className="mt-8 hidden lg:inline-flex">
-            <Link to="/owner/register">Commencer gratuitement</Link>
+            <Link to={commencerHref}>{libelle}</Link>
           </Button>
         </div>
         <ol className="mt-6 space-y-5 lg:mt-0 lg:space-y-4">
@@ -45,11 +49,12 @@ const OwnerStepsSection = () => (
           ))}
         </ol>
         <Button asChild size="lg" className="mt-8 w-full lg:hidden">
-          <Link to="/owner/register">Commencer gratuitement</Link>
+          <Link to={commencerHref}>{libelle}</Link>
         </Button>
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default OwnerStepsSection;

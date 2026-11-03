@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Star } from "lucide-react";
 import type { Bien } from "@/api/bien";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
@@ -15,14 +14,13 @@ export function MarqueurPrix({ bien, actif, vu }: { bien: BienCarte; actif: bool
   return (
     <span
       className={cn(
-        "relative inline-flex items-center gap-1 whitespace-nowrap rounded-marker px-2.5 py-1.5 text-caption font-bold shadow-card transition-transform duration-hover",
+        "relative inline-flex items-center gap-1 whitespace-nowrap rounded-marker border border-filet px-2.5 py-1.5 text-caption font-bold transition-transform duration-hover",
         actif && "scale-110 bg-baobab text-white",
         !actif && premium && "bg-soleil text-encre",
         !actif && !premium && vu && "bg-surface text-texte2",
         !actif && !premium && !vu && "bg-white text-encre",
       )}
     >
-      {premium && <Star aria-hidden className="size-3 fill-current" />}
       {bien.prix !== null ? formatFcfaCourt(bien.prix) : "Prix ?"}
     </span>
   );
@@ -36,7 +34,7 @@ export function ApercuBien({ bien }: { bien: BienCarte }) {
   return (
     <Link
       to={`/annonce/${bien.id}`}
-      className="flex w-[280px] gap-3 rounded-card bg-white p-2 text-left shadow-float"
+      className="flex w-[280px] gap-3 rounded-card border border-filet bg-white p-2 text-left"
       onClick={(event) => event.stopPropagation()}
     >
       <span className="size-20 shrink-0 overflow-hidden rounded-control bg-surface">

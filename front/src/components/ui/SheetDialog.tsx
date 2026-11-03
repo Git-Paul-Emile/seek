@@ -22,7 +22,7 @@ export function SheetDialog({ open, onOpenChange, title, description, children, 
         <Dialog.Overlay className="fixed inset-0 z-[90] bg-encre/50 data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           className={cn(
-            "fixed inset-x-0 bottom-0 z-[91] max-h-[92dvh] overflow-y-auto rounded-t-sheet bg-white p-6 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-float focus:outline-none",
+            "fixed inset-x-0 bottom-0 z-[91] max-h-[92dvh] overflow-y-auto rounded-t-sheet bg-white p-6 pb-[calc(24px+env(safe-area-inset-bottom))]  focus:outline-none",
             "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-sheet sm:pb-6",
             className,
           )}

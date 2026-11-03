@@ -106,7 +106,7 @@ export default function ImageUpload({
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-2 top-2 z-10 flex size-10 items-center justify-center rounded-full bg-white text-encre shadow-card hover:bg-surface"
+              className="absolute right-2 top-2 z-10 flex size-10 items-center justify-center rounded-full bg-white text-encre hover:bg-surface"
               aria-label="Supprimer l'image"
               title="Supprimer l'image"
             >

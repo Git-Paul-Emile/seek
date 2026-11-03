@@ -3,6 +3,7 @@ import { Bell, ClipboardCheck, FileText, History, House, UserRoundCog, Wallet, t
 import { useLocataireAuth } from "@/context/LocataireAuthContext";
 import { useLocataireNotifications } from "@/hooks/useNotificationInApp";
 import { useLocataireEcheancier } from "@/hooks/useLocataireEcheancier";
+import { trouverBailEnCours } from "./bailEnCours";
 
 // Navigation de l'espace locataire, partagée par la barre latérale (desktop)
 // et les onglets mobiles (charte, planches 27 et 34).
@@ -29,11 +30,10 @@ export const SOUS_PAGES_LOGEMENT = [
 
 export const estSousPageLogement = (pathname: string) => SOUS_PAGES_LOGEMENT.some(({ to }) => pathname === to);
 
-const STATUTS_BAIL_EN_COURS = ["ACTIF", "EN_PREAVIS"];
 
 export function useLocataireNavigation() {
   const { locataire } = useLocataireAuth();
-  const bailEnCours = locataire?.bails?.find((bail) => STATUTS_BAIL_EN_COURS.includes(bail.statut));
+  const bailEnCours = trouverBailEnCours(locataire?.bails);
   const { data: notifications } = useLocataireNotifications();
   const { data: echeancier = [] } = useLocataireEcheancier(Boolean(bailEnCours));
 

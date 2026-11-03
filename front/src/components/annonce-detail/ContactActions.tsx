@@ -45,7 +45,7 @@ export function ContactBar({ bien, contact }: { bien: Bien; contact: Contact }) 
 
 export function ContactCard({ bien, contact }: { bien: Bien; contact: Contact }) {
   return (
-    <div className="rounded-sheet border border-filet bg-white p-6 shadow-card">
+    <div className="rounded-sheet border border-filet bg-white p-6">
       {bien.prix !== null && <p className="tabular text-h2 font-bold text-encre">{formatFcfa(bien.prix)}</p>}
       <p className="text-body-m text-texte2">{sousTitrePrix(bien)}</p>
       <div className="mt-6 space-y-3">

@@ -29,7 +29,6 @@ function FavoriRetire({ item }: { item: FavoriItem }) {
           onClick={() => retirer.mutate(item.bienId)}
           disabled={retirer.isPending}
           aria-label={`Retirer ${item.bien.titre ?? "cette annonce"} de vos favoris`}
-          className="shadow-card"
         >
           <Trash2 aria-hidden />
         </Button>

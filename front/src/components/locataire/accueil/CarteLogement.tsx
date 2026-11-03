@@ -5,6 +5,12 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 // « Mon logement » : le logement dans l'arche, motif signature de la charte (planche 34).
 
+const LIBELLES_STATUT: Partial<Record<BailResume["statut"], string>> = {
+  ACTIF: "Bail actif",
+  EN_PREAVIS: "En préavis",
+  EN_RENOUVELLEMENT: "En renouvellement",
+};
+
 export function CarteLogement({ bail }: { bail: BailResume }) {
   const { titre, quartier, ville } = bail.bien ?? {};
   const localisation = [quartier, ville].filter(Boolean).join(", ");
@@ -19,8 +25,8 @@ export function CarteLogement({ bail }: { bail: BailResume }) {
           {titre || localisation || "Logement"}
         </h2>
         {titre && localisation && <p className="mt-1 text-body-m text-texte2">{localisation}</p>}
-        <StatusBadge tone={bail.statut === "EN_PREAVIS" ? "attente" : "positif"} className="mt-3">
-          {bail.statut === "EN_PREAVIS" ? "En préavis" : "Bail actif"}
+        <StatusBadge tone={bail.statut === "ACTIF" ? "positif" : "attente"} className="mt-3">
+          {LIBELLES_STATUT[bail.statut] ?? "Bail actif"}
         </StatusBadge>
       </div>
     </section>

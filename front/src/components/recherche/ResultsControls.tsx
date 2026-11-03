@@ -99,7 +99,7 @@ export function VueToggle({ value, onChange }: { value: VueKey; onChange: (vue: 
           onClick={() => onChange(vue)}
           className={cn(
             "flex size-10 items-center justify-center rounded-[10px] text-texte2 transition-colors duration-tab",
-            value === vue && "bg-white text-encre shadow-sm",
+            value === vue && "bg-white text-encre ",
           )}
         >
           <Icon aria-hidden className="size-5" />

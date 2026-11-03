@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { CalendarCheck, Megaphone, RefreshCw, StopCircle, Wallet } from "lucide-react";
-import { useAdminHistoriquePromotions, useAdminStatsPromotions, useAdminArreterPromotion, useAdminTraiterExpires } from "@/hooks/usePremium";
+import { useAdminHistoriquePromotions, useAdminStatsPromotions, useAdminArreterPromotion, useAdminTraiterExpires, useAdminTotauxPromotions } from "@/hooks/usePremium";
 import { paginationServeur } from "@/hooks/usePagination";
 import { Button } from "@/components/ui/button";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -55,6 +55,12 @@ export default function PromotionsAdmin() {
 
   const { data, isLoading } = useAdminHistoriquePromotions({ page, limit: TAILLE_PAGE, statut: statut || undefined });
   const { data: stats } = useAdminStatsPromotions();
+  const statutsFiltres = FILTRES.map(({ valeur }) => valeur).filter(Boolean);
+  const totaux = useAdminTotauxPromotions(statutsFiltres);
+  const filtres = FILTRES.map((filtre) => ({
+    ...filtre,
+    compteur: filtre.valeur ? totaux[statutsFiltres.indexOf(filtre.valeur)] : stats?.total,
+  }));
   const arreter = useAdminArreterPromotion();
   const traiterExpires = useAdminTraiterExpires();
 
@@ -110,7 +116,7 @@ export default function PromotionsAdmin() {
         </SectionAdmin>
       )}
 
-      <FiltresStatut label="Filtrer par statut" options={FILTRES} valeur={statut} onChange={changerStatut} />
+      <FiltresStatut label="Filtrer par statut" options={filtres} valeur={statut} onChange={changerStatut} />
 
       <Tableau label="Historique des promotions">
         <TeteTableau>

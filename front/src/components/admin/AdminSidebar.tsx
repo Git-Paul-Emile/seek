@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ArrowUpRight, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import { estActif, useAdminNavigation, useDeconnexionAdmin, type AdminNavLien } from "./useAdminNavigation";
@@ -100,7 +100,7 @@ export function AdminSidebar() {
         <Logo variant="blanc" height={32} />
         <BadgeAdmin />
       </Link>
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
+      <div className="hide-scrollbar flex-1 overflow-y-auto px-4 pb-6">
         <NavigationAdmin />
       </div>
       <div className="mx-4 flex shrink-0 items-center gap-3 border-t border-white/15 py-5">
@@ -112,14 +112,6 @@ export function AdminSidebar() {
             <span className="block truncate text-body-m font-semibold text-white">{email}</span>
             <span className="block text-body-m text-white/65">Administrateur</span>
           </span>
-        </Link>
-        <Link
-          to="/"
-          aria-label="Voir le site"
-          title="Voir le site"
-          className="flex size-10 shrink-0 items-center justify-center rounded-control text-white/70 hover:bg-white/10 hover:text-white"
-        >
-          <ArrowUpRight aria-hidden className="size-5" />
         </Link>
         <button
           type="button"

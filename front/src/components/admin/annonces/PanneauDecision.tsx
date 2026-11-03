@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 import type { Bien } from "@/api/bien";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
@@ -113,10 +113,10 @@ export function PanneauDecision({ annonce, enCours, onDecider }: PanneauDecision
       )}
 
       <ul aria-label="Contrôles automatiques" className="space-y-2">
-        {controlerAnnonce(annonce).map(({ ok, libelle }) => (
+        {controlerAnnonce(annonce).map(({ ok, libelle, icone: Icone }) => (
           <li key={libelle} className={ok ? "flex items-start gap-3 text-body-m text-encre" : "flex items-start gap-3 text-body-m font-semibold text-encre"}>
             {ok ? (
-              <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-baobab" />
+              <Icone aria-hidden className="mt-0.5 size-4 shrink-0 text-baobab" />
             ) : (
               <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 fill-soleil text-encre" />
             )}

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CircleCheck, Hourglass, Loader2, Smartphone, Star, TriangleAlert } from "lucide-react";
+import { CircleCheck, Hourglass, Loader2, Smartphone, TriangleAlert } from "lucide-react";
 import {
   usePromotionStatus,
   usePlacesDisponibles,
@@ -167,7 +167,6 @@ export default function PremiumPayment({ bienId, bienTitre, onSuccess }: Premium
               </Button>
             ) : (
               <Button variant="soleil" className="w-full" onClick={ouvrirFormules} disabled={payerMutation.isPending}>
-                <Star aria-hidden />
                 {peutRenouveler ? "Renouveler" : "Mettre en avant"}
               </Button>
             )}

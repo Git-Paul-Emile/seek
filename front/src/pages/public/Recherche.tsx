@@ -149,7 +149,7 @@ const RecherchePage = () => {
           <button
             type="button"
             onClick={() => setCarteMobile((visible) => !visible)}
-            className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-40 inline-flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-encre px-6 text-body-l font-bold text-white shadow-float"
+            className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] left-1/2 z-40 inline-flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-encre px-6 text-body-l font-bold text-white"
           >
             {carteMobile ? <List aria-hidden className="size-5" /> : <MapIcon aria-hidden className="size-5" />}
             {carteMobile ? "Liste" : "Carte"}

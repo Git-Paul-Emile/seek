@@ -62,7 +62,7 @@ export function FiltersSheet({ open, onOpenChange, current, onApply }: FiltersSh
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-encre/50 data-[state=open]:animate-overlay-in" />
-        <Dialog.Content className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[92dvh] flex-col rounded-t-sheet bg-white shadow-float focus:outline-none lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[440px] lg:rounded-l-sheet lg:rounded-tr-none">
+        <Dialog.Content className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[92dvh] flex-col rounded-t-sheet bg-white focus:outline-none lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[440px] lg:rounded-l-sheet lg:rounded-tr-none">
           <div aria-hidden className="mx-auto mt-3 h-1 w-10 rounded-full bg-filet lg:hidden" />
           <div className="grid grid-cols-[1fr_auto] items-center gap-2 px-6 pb-2 pt-4">
             <Dialog.Title className="text-h3 font-bold text-encre">Filtres</Dialog.Title>
@@ -79,7 +79,7 @@ export function FiltersSheet({ open, onOpenChange, current, onApply }: FiltersSh
           </div>
           <Dialog.Description className="sr-only">Affinez les annonces affichées</Dialog.Description>
 
-          <div className="flex-1 overflow-y-auto px-6">
+          <div className="hide-scrollbar flex-1 overflow-y-auto px-6">
             <Section title="Je veux">
               <div className="flex gap-2">
                 {[
@@ -125,7 +125,7 @@ export function FiltersSheet({ open, onOpenChange, current, onApply }: FiltersSh
                       onClick={() => draft.toggleValue("chambres", nombre)}
                       className={cn(
                         "h-10 flex-1 rounded-full text-body-m font-semibold transition-colors duration-tab",
-                        actif ? "bg-white text-encre shadow-sm" : "text-texte2",
+                        actif ? "bg-white text-encre " : "text-texte2",
                       )}
                     >
                       {index === CHAMBRES.length - 1 ? `${nombre} +` : nombre}

@@ -519,7 +519,7 @@ export default function PaiementsPage() {
       )}
 
       <Carte titre="Échéances">
-        <div role="group" aria-label="Filtrer les échéances" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div role="group" aria-label="Filtrer les échéances" className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {FILTER_TABS.map((tab) => (
             <Chip key={tab.key} size="sm" selected={filter === tab.key} onClick={() => setFilter(tab.key)}>
               {tab.label}

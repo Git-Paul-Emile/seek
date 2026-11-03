@@ -421,7 +421,7 @@ export default function EtatDesLieuxForm() {
         </div>
       )}
 
-      <div className="sticky bottom-4 z-[110] flex flex-wrap justify-end gap-3 rounded-card border border-filet bg-white/95 p-4 shadow-float backdrop-blur">
+      <div className="sticky bottom-4 z-[110] flex flex-wrap justify-end gap-3 rounded-card border border-filet bg-white/95 p-4 backdrop-blur">
         {conteste ? (
           <Button onClick={envoyerResolutions} disabled={chargement}>
             {chargement ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}

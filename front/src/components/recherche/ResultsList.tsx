@@ -50,7 +50,7 @@ export function ResultsList({ items, isLoading, isError, onRetry, onClearFilters
   const lignes: (Bien | null)[] = isLoading ? Array.from({ length: SKELETONS }, () => null) : items;
 
   return (
-    <ul className={cn(grille ? "grid grid-cols-2 gap-6" : "divide-y divide-filet")}>
+    <ul className={cn(grille ? "grid grid-cols-2 gap-4 xl:grid-cols-3" : "divide-y divide-filet")}>
       {lignes.map((annonce, index) => (
         <li key={annonce?.id ?? `squelette-${index}`}>
           {annonce ? (

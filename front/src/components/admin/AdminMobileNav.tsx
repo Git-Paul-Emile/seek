@@ -54,7 +54,7 @@ function PanneauPlus({ open, onClose }: { open: boolean; onClose: () => void }) 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-encre px-4 pb-[calc(24px+env(safe-area-inset-bottom))] lg:hidden" role="dialog" aria-modal="true" aria-label="Administration">
+    <div className="hide-scrollbar fixed inset-0 z-[60] overflow-y-auto bg-encre px-4 pb-[calc(24px+env(safe-area-inset-bottom))] lg:hidden" role="dialog" aria-modal="true" aria-label="Administration">
       <div className="sticky top-0 flex h-16 items-center justify-between bg-encre">
         <span className="flex items-center gap-2">
           <Logo variant="blanc" height={24} />

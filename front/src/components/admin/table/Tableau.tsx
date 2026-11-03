@@ -77,7 +77,7 @@ export function FiltresStatut<T extends string>({
     <div role="group" aria-label={label} className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
       {options.map((option) => (
         <Chip key={option.valeur} selected={valeur === option.valeur} onClick={() => onChange(option.valeur)}>
-          {option.compteur ? `${option.label} · ${option.compteur}` : option.label}
+          {typeof option.compteur === "number" ? `${option.label} · ${option.compteur}` : option.label}
         </Chip>
       ))}
       {apres}

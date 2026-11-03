@@ -4,14 +4,14 @@ import { useProprietaireLocataire } from "@/hooks/useProprietaireLocataire";
 import { SkDetailSections } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/brand/EmptyState";
+import { trouverBailEnCours } from "@/components/locataire/bailEnCours";
 
 // Coordonnées du propriétaire du logement en cours.
 
-const STATUTS_BAIL_EN_COURS = ["ACTIF", "EN_PREAVIS"];
 
 export default function ProprietaireLocatairePage() {
   const { locataire } = useLocataireAuth();
-  const aUnBail = Boolean(locataire?.bails?.some((bail) => STATUTS_BAIL_EN_COURS.includes(bail.statut)));
+  const aUnBail = Boolean(trouverBailEnCours(locataire?.bails));
   const { data, isLoading } = useProprietaireLocataire(aUnBail);
 
   if (isLoading) return <SkDetailSections sections={2} />;

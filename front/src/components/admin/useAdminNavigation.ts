@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
+  ArrowUpRight,
   Bell,
   CreditCard,
   FileText,
@@ -11,7 +12,7 @@ import {
   MapPin,
   MessageSquare,
   Settings2,
-  Star,
+  Megaphone,
   Ban,
   Users,
   Building2,
@@ -69,7 +70,12 @@ export function useAdminNavigation() {
   const nbNonLues = notifications?.unreadCount ?? 0;
 
   const sections: AdminNavSection[] = [
-    { liens: [{ to: "/admin/dashboard", label: "Tableau de bord", shortLabel: "Tableau", icon: LayoutGrid }] },
+    {
+      liens: [
+        { to: "/admin/dashboard", label: "Tableau de bord", shortLabel: "Tableau", icon: LayoutGrid },
+        { to: "/", label: "Voir le site", icon: ArrowUpRight },
+      ],
+    },
     {
       titre: "Modération",
       liens: [
@@ -106,7 +112,7 @@ export function useAdminNavigation() {
         {
           to: "/admin/premium/formules",
           label: "Promotions et Premium",
-          icon: Star,
+          icon: Megaphone,
           enfants: [
             { to: "/admin/premium/formules", label: "Formules premium" },
             { to: "/admin/premium/historique", label: "Mises en avant" },

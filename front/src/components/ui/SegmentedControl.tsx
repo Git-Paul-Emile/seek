@@ -45,7 +45,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "h-10 rounded-full px-5 text-body-l font-semibold transition-colors duration-tab",
-              active && "bg-white text-baobab shadow-sm",
+              active && "bg-white text-baobab ",
               !active && (onBaobab ? "text-white/85 hover:text-white" : "text-texte2 hover:text-encre"),
             )}
           >

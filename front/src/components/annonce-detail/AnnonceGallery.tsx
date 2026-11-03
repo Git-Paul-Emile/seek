@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
-import { Camera, ChevronLeft, ChevronRight, Heart, Share2, Star, X } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Heart, Share2, X } from "lucide-react";
 import type { Bien } from "@/api/bien";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // Galerie de la fiche (maquette « Fiche annonce ») : photo 4:3 qui défile au doigt,
 // boutons ronds retour, partage, favori, badge Premium, compteur de photos, plein écran.
 
-const boutonRond = "flex size-12 items-center justify-center rounded-full bg-white text-encre shadow-card hover:bg-surface";
+const boutonRond = "flex size-12 items-center justify-center rounded-full bg-white text-encre hover:bg-surface";
 
 interface AnnonceGalleryProps {
   bien: Bien;
@@ -97,8 +97,7 @@ export function AnnonceGallery({ bien, onShare }: AnnonceGalleryProps) {
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
         {bien.estMisEnAvant ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-encre px-3 py-1.5 text-body-m font-semibold text-soleil">
-            <Star aria-hidden className="size-4 fill-soleil" />
+          <span className="inline-flex items-center rounded-full bg-encre px-3 py-1.5 text-body-m font-semibold text-soleil">
             Premium
           </span>
         ) : (

@@ -7,19 +7,20 @@ import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
 import { formatFcfa, NO_BREAK_SPACE } from "@/lib/fcfa";
 import { formatDateLongue } from "@/lib/dates";
+import { estStatutEnCours } from "@/components/locataire/bailEnCours";
 
 // Mes logements : le bail en cours et les baux passés, avec le suivi des loyers payés.
 
 const STATUTS_BAIL: Record<string, { label: string; tone: StatusTone }> = {
   ACTIF: { label: "En cours", tone: "positif" },
   EN_PREAVIS: { label: "En préavis", tone: "attente" },
+  EN_RENOUVELLEMENT: { label: "En renouvellement", tone: "attente" },
   EN_ATTENTE: { label: "En attente", tone: "attente" },
   TERMINE: { label: "Terminé", tone: "neutre" },
   RESILIE: { label: "Résilié", tone: "arret" },
   ARCHIVE: { label: "Archivé", tone: "neutre" },
 };
 
-const STATUTS_EN_COURS = ["ACTIF", "EN_PREAVIS"];
 
 function CarteBail({ bail }: { bail: BailHistorique }) {
   const statut = STATUTS_BAIL[bail.statut] ?? { label: bail.statut, tone: "neutre" as const };
@@ -93,8 +94,8 @@ function Section({ titre, bails }: { titre: string; bails: BailHistorique[] }) {
 
 export default function HistoriqueLogement() {
   const { data: bails = [], isLoading } = useLocataireHistorique();
-  const enCours = bails.filter((bail) => STATUTS_EN_COURS.includes(bail.statut));
-  const anciens = bails.filter((bail) => !STATUTS_EN_COURS.includes(bail.statut));
+  const enCours = bails.filter((bail) => estStatutEnCours(bail.statut));
+  const anciens = bails.filter((bail) => !estStatutEnCours(bail.statut));
 
   return (
     <div className="space-y-8">

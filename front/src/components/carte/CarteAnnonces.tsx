@@ -48,7 +48,7 @@ function epurerStyle(map: mapboxgl.Map) {
   });
 }
 
-const boutonCarte = "flex size-12 items-center justify-center rounded-control border border-bord-champ bg-white text-encre shadow-card hover:bg-surface";
+const boutonCarte = "flex size-12 items-center justify-center rounded-control border border-bord-champ bg-white text-encre hover:bg-surface";
 
 interface CarteAnnoncesProps {
   items: Bien[];
@@ -123,7 +123,7 @@ export default function CarteAnnonces({ items, proximityPoint, highlightedId, on
       >
         {proximityPoint && (
           <Marker longitude={proximityPoint.lng} latitude={proximityPoint.lat} anchor="center">
-            <span aria-label={proximityPoint.label ?? "Point recherché"} className="block size-5 rounded-full border-[3px] border-white bg-encre shadow-card" />
+            <span aria-label={proximityPoint.label ?? "Point recherché"} className="block size-5 rounded-full border-[3px] border-white bg-encre" />
           </Marker>
         )}
         {groupes.map((groupe) => {
@@ -139,7 +139,7 @@ export default function CarteAnnonces({ items, proximityPoint, highlightedId, on
                   mapRef.current?.flyTo({ center: [groupe.lng, groupe.lat], zoom: zoom + 2 });
                 }}
               >
-                <span className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-baobab text-body-m font-bold text-white ring-8 ring-baobab/20">
+                <span className="flex size-12 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-baobab text-body-m font-bold text-white">
                   {groupe.biens.length}
                 </span>
               </Marker>
@@ -176,7 +176,7 @@ export default function CarteAnnonces({ items, proximityPoint, highlightedId, on
         <button
           type="button"
           onClick={rechercherIci}
-          className="absolute left-1/2 top-4 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-white px-5 text-body-m font-semibold text-encre shadow-float"
+          className="absolute left-1/2 top-4 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full border border-bord-champ bg-white px-5 text-body-m font-semibold text-encre"
         >
           <Search aria-hidden className="size-5" />
           Rechercher dans cette zone
@@ -196,7 +196,7 @@ export default function CarteAnnonces({ items, proximityPoint, highlightedId, on
       </div>
 
       {placees.length < items.length && (
-        <p className="absolute bottom-4 left-4 max-w-[60%] rounded-control bg-white px-3 py-2 text-caption text-texte2 shadow-card">
+        <p className="absolute bottom-4 left-4 max-w-[60%] rounded-control border border-filet bg-white px-3 py-2 text-caption text-texte2">
           {items.length - placees.length} annonce{items.length - placees.length > 1 ? "s" : ""} sans position GPS, visible
           {items.length - placees.length > 1 ? "s" : ""} dans la liste.
         </p>

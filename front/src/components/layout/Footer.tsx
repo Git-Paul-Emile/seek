@@ -75,7 +75,7 @@ const Footer = () => {
         <FooterColumn title="Aide" links={aide} />
       </div>
       <div className="border-t border-white/10">
-        <p className="container py-6 text-body-m text-white/70">© {annee} Seek · Dakar, Sénégal</p>
+        <p className="container py-6 text-center text-body-m text-white/70">© {annee} Seek · Dakar, Sénégal</p>
       </div>
     </footer>
   );

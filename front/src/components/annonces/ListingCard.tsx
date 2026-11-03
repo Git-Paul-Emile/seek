@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bath, BedDouble, Camera, Check, Heart, Maximize, Star } from "lucide-react";
+import { Bath, BedDouble, Camera, Check, Heart, Maximize } from "lucide-react";
 import type { Bien } from "@/api/bien";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
@@ -92,8 +92,7 @@ function Vignette({ annonce, priority, compact }: { annonce: AnnonceCarteData; p
         <PropertyIllustration kind={illustrationForType(annonce.typeLogement?.slug ?? annonce.typeLogement?.nom)} />
       )}
       {annonce.estMisEnAvant && (
-        <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-encre px-2.5 py-1 text-caption font-semibold text-soleil">
-          <Star aria-hidden className="size-3.5 fill-soleil" />
+        <span className="absolute left-2.5 top-2.5 inline-flex items-center rounded-full bg-encre px-2.5 py-1 text-caption font-semibold text-soleil">
           Premium
         </span>
       )}
@@ -122,7 +121,7 @@ function FavoriButton({ annonceId, titre, flottant }: { annonceId: string; titre
       aria-label={actif ? `Retirer ${titre} de vos favoris` : `Ajouter ${titre} à vos favoris`}
       className={cn(
         "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors duration-hover",
-        flottant ? "bg-white shadow-card hover:bg-surface" : "hover:bg-surface",
+        flottant ? "bg-white hover:bg-surface" : "hover:bg-surface",
       )}
     >
       <Heart aria-hidden className={cn("size-5", actif ? "fill-baobab text-baobab" : "text-encre")} strokeWidth={1.75} />
@@ -213,13 +212,21 @@ export function ListingCard({
     <article
       {...hoverProps}
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-card border bg-white transition-shadow duration-hover hover:shadow-card",
-        compared || highlighted ? "border-2 border-baobab" : "border-filet",
+        // Survol (ou marqueur survolé sur la carte) : la photo zoome, sans ombre ni bordure.
+        "group relative flex h-full flex-col overflow-hidden rounded-card border bg-white",
+        compared ? "border-2 border-baobab" : "border-filet",
         className,
       )}
     >
-      <div className="relative aspect-[4/3]">
-        <Vignette annonce={annonce} priority={priority} compact={false} />
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <div
+          className={cn(
+            "size-full transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100",
+            highlighted && "scale-105",
+          )}
+        >
+          <Vignette annonce={annonce} priority={priority} compact={false} />
+        </div>
         <div className="absolute right-2.5 top-2.5">
           <FavoriButton annonceId={annonce.id} titre={titre} flottant />
         </div>

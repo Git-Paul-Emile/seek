@@ -2,7 +2,8 @@ import { ArrowUpDown, Bath, BedDouble, CookingPot, Maximize, Sofa, Toilet, type 
 import type { Bien } from "@/api/bien";
 import { NO_BREAK_SPACE } from "@/lib/fcfa";
 
-// Caractéristiques en tuiles (maquette « Fiche annonce ») : la valeur en gras, le libellé dessous.
+// Caractéristiques en tuiles (maquette « Fiche annonce ») : la valeur en gras, le libellé dessous,
+// sur une seule rangée qui défile horizontalement (barre de défilement masquée).
 
 interface Tuile {
   icon: LucideIcon;
@@ -33,21 +34,24 @@ const tuiles = (bien: Bien): Tuile[] =>
     bien.nbWc ? { icon: Toilet, valeur: String(bien.nbWc), libelle: "Toilettes" } : null,
   ].filter((tuile): tuile is Tuile => tuile !== null);
 
-export function CaracteristiquesGrid({ bien }: { bien: Bien }) {
+/** `titre` à false quand la section parente porte déjà le titre « Caractéristiques » (admin). */
+export function CaracteristiquesGrid({ bien, titre = true }: { bien: Bien; titre?: boolean }) {
   const liste = tuiles(bien);
   if (liste.length === 0) return null;
   return (
-    <section aria-labelledby="caracteristiques-titre">
-      <h2 id="caracteristiques-titre" className="sr-only">
-        Caractéristiques
-      </h2>
-      <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <section aria-labelledby={titre ? "caracteristiques-titre" : undefined} aria-label={titre ? undefined : "Caractéristiques"}>
+      {titre && (
+        <h2 id="caracteristiques-titre" className="sr-only">
+          Caractéristiques
+        </h2>
+      )}
+      <ul className="hide-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 lg:mx-0 lg:px-0">
         {liste.map(({ icon: Icon, valeur, libelle }) => (
-          <li key={libelle} className="flex items-center gap-4 rounded-card bg-surface p-4">
+          <li key={libelle} className="flex shrink-0 snap-start items-center gap-3 rounded-card bg-surface py-4 pl-4 pr-6">
             <Icon aria-hidden className="size-7 shrink-0 text-baobab" strokeWidth={1.75} />
             <div className="min-w-0">
               <p className="text-h3 font-bold text-encre">{valeur}</p>
-              <p className="text-body-m text-texte2">{libelle}</p>
+              <p className="whitespace-nowrap text-body-m text-texte2">{libelle}</p>
             </div>
           </li>
         ))}

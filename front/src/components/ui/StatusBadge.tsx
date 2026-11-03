@@ -1,17 +1,18 @@
-import { Check, CircleDashed, Hourglass, Star, TriangleAlert, X, type LucideIcon } from "lucide-react";
+import { Check, CircleDashed, Hourglass, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Charte, planche « Statuts » : toujours un mot et une icône, lisible même sans la couleur.
 // Pas de rouge : l'alerte est en Soleil plein avec le triangle.
+// Exception : le badge Premium (encre et Soleil) se lit sans icône.
 export type StatusTone = "positif" | "attente" | "alerte" | "arret" | "neutre" | "premium";
 
-const TONES: Record<StatusTone, { icon: LucideIcon; className: string }> = {
+const TONES: Record<StatusTone, { icon: LucideIcon | null; className: string }> = {
   positif: { icon: Check, className: "bg-baobab-100 text-baobab" },
   attente: { icon: Hourglass, className: "bg-soleil-100 text-encre" },
   alerte: { icon: TriangleAlert, className: "bg-soleil text-encre" },
   arret: { icon: X, className: "border-[1.5px] border-encre bg-white text-encre" },
   neutre: { icon: CircleDashed, className: "bg-surface text-texte2" },
-  premium: { icon: Star, className: "bg-encre text-soleil" },
+  premium: { icon: null, className: "bg-encre text-soleil" },
 };
 
 interface StatusBadgeProps {
@@ -32,7 +33,7 @@ export function StatusBadge({ tone, children, size = "md", className }: StatusBa
         className,
       )}
     >
-      <Icon aria-hidden className={size === "md" ? "size-4" : "size-3.5"} strokeWidth={2} />
+      {Icon && <Icon aria-hidden className={size === "md" ? "size-4" : "size-3.5"} strokeWidth={2} />}
       {children}
     </span>
   );

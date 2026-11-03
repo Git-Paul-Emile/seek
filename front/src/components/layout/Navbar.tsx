@@ -55,7 +55,7 @@ function MobileMenu({ tone }: { tone: NavbarTone }) {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-encre/50 data-[state=open]:animate-overlay-in" />
-        <Dialog.Content className="fixed inset-y-0 right-0 z-[61] flex w-[86%] max-w-sm flex-col rounded-l-sheet bg-white p-4 shadow-float focus:outline-none">
+        <Dialog.Content className="fixed inset-y-0 right-0 z-[61] flex w-[86%] max-w-sm flex-col rounded-l-sheet bg-white p-4 focus:outline-none">
           <div className="flex items-center justify-between pb-4">
             <Logo height={28} />
             <Dialog.Close asChild>
@@ -66,7 +66,7 @@ function MobileMenu({ tone }: { tone: NavbarTone }) {
           </div>
           <Dialog.Title className="sr-only">Menu</Dialog.Title>
           <Dialog.Description className="sr-only">Navigation de Seek</Dialog.Description>
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+          <nav className="hide-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto">
             {NAV_LINKS.map((link) => (
               <Link key={link.to} to={link.to} onClick={close} className={linkClass}>
                 {link.label}
@@ -156,7 +156,7 @@ function DesktopActions({ tone, compact }: { tone: NavbarTone; compact: boolean 
       </Button>
       {session.isConnected && (
         <Link
-          to="/mon-compte"
+          to={session.compteHref}
           aria-label="Mon compte"
           className="flex size-12 items-center justify-center rounded-full bg-baobab-100 text-body-m font-bold text-baobab"
         >
@@ -211,6 +211,16 @@ const Navbar = ({ tone = "blanc", center, hideOnMobile = false }: NavbarProps) =
                 </NavLink>
               );
             })}
+            {/* Accès locataire : connexion, ou son espace s'il est déjà connecté. */}
+            <NavLink
+              to={session.espaceLocataireHref}
+              className={cn(
+                "rounded-control px-3 py-2 text-body-l font-medium transition-colors duration-hover",
+                onBaobab ? "text-white hover:bg-white/10" : "text-encre hover:bg-surface",
+              )}
+            >
+              Locataires
+            </NavLink>
           </nav>
         )}
 

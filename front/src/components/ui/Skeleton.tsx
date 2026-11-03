@@ -3,7 +3,7 @@
 // ─── Base ──────────────────────────────────────────────────────────────────────
 
 export function Sk({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`bg-filet animate-pulse rounded-lg ${className}`} style={style} />;
+  return <div className={`bg-filet animate-pulse rounded-control ${className}`} style={style} />;
 }
 
 // ─── Lignes de tableau ─────────────────────────────────────────────────────────

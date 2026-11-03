@@ -124,8 +124,9 @@ export const uploadEtatLieuxImageLocataire = (file: File): Promise<string> => {
 export const contesterElementsLocataire = (id: string, elements: { elementId: string; motifContestation: string; photoContestation: string }[]): Promise<EtatDesLieux> =>
   api.post<{ data: EtatDesLieux }>(`/locataire/${id}/contester`, { elements }).then((r) => r.data.data);
 
-export const validateEtatDesLieux = (id: string, documentPdf?: string): Promise<EtatDesLieux> =>
-  api.post<{ data: EtatDesLieux }>(`/locataire/${id}/validate`, { documentPdf }).then((r) => r.data.data);
+/** Signature du locataire : le serveur produit et archive lui-même le PDF signé. */
+export const validateEtatDesLieux = (id: string): Promise<EtatDesLieux> =>
+  api.post<{ data: EtatDesLieux }>(`/locataire/${id}/validate`).then((r) => r.data.data);
 
 export const getEtatDesLieuxLocataire = (id: string): Promise<EtatDesLieux> =>
   api.get<{ data: EtatDesLieux }>(`/locataire/${id}`).then((r) => r.data.data);

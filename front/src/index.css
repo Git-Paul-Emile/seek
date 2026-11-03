@@ -128,6 +128,24 @@
     outline-offset: 2px;
   }
 
+  /* Barres de défilement des pages : réduites au minimum, en Baobab. Les barres latérales,
+     menus et rangées de filtres les masquent avec .hide-scrollbar. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #0a5c43 transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #0a5c43;
+    border-radius: 9999px;
+  }
+
   /* Chiffres alignés pour les prix et montants. */
   .tabular {
     font-variant-numeric: tabular-nums;

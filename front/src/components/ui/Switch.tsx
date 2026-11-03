@@ -27,8 +27,9 @@ export function Switch({ checked, onChange, label, className }: SwitchProps) {
       >
         <span
           className={cn(
-            "absolute top-1/2 size-6 -translate-y-1/2 rounded-full transition-transform duration-tab",
-            checked ? "translate-x-[26px] bg-white" : "translate-x-0.5 bg-bord-champ",
+            // Position de départ explicite : sans `left`, le navigateur place le rond après le texte du bouton.
+            "absolute left-0.5 top-1/2 size-6 -translate-y-1/2 rounded-full transition-transform duration-tab",
+            checked ? "translate-x-6 bg-white" : "translate-x-0 bg-bord-champ",
           )}
         />
       </span>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCompteursSignalements } from "@/hooks/useCompteursSignalements";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
@@ -163,6 +164,8 @@ export default function SignalementsAdmin() {
   });
 
   const enAttente = statut === "EN_ATTENTE";
+  const compteurs = useCompteursSignalements(FILTRES.map(({ valeur }) => valeur));
+  const filtres = FILTRES.map((filtre, index) => ({ ...filtre, compteur: compteurs[index] }));
 
   return (
     <div>
@@ -173,7 +176,7 @@ export default function SignalementsAdmin() {
       />
 
       <div className="mb-4">
-        <FiltresStatut<StatutSignalement> label="Filtrer par statut" options={FILTRES} valeur={statut} onChange={setStatut} />
+        <FiltresStatut<StatutSignalement> label="Filtrer par statut" options={filtres} valeur={statut} onChange={setStatut} />
       </div>
 
       <Tableau label="Signalements">

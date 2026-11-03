@@ -19,7 +19,7 @@ export default function ComparisonBar() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 lg:bottom-6">
-      <div className="pointer-events-auto flex w-full max-w-2xl items-center gap-3 rounded-card bg-encre px-4 py-3 text-white shadow-float">
+      <div className="pointer-events-auto flex w-full max-w-2xl items-center gap-3 rounded-card bg-encre px-4 py-3 text-white">
         <ul className="flex shrink-0 items-center gap-2">
           {items.map((bien) => (
             <li key={bien.id} className="relative">

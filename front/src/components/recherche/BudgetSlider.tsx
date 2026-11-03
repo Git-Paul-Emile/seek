@@ -50,7 +50,7 @@ export function BudgetSlider({ transaction, min, max, onChange }: BudgetSliderPr
           <Slider.Thumb
             key={label}
             aria-label={label}
-            className="block size-6 rounded-full border-2 border-baobab bg-white shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="block size-6 rounded-full border-2 border-baobab bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           />
         ))}
       </Slider.Root>

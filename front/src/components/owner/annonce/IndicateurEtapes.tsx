@@ -32,7 +32,7 @@ export function EtapesDesktop({ indexEtape, onSelect }: IndicateurProps) {
               className={cn(
                 "relative z-10 flex size-12 items-center justify-center rounded-full border-2 text-title font-bold transition-colors duration-hover",
                 faite && "border-baobab bg-baobab text-white",
-                active && "border-baobab bg-white text-baobab ring-4 ring-baobab-100",
+                active && "border-baobab bg-white text-baobab",
                 !faite && !active && "border-bord-champ bg-white text-texte2",
               )}
             >

@@ -178,7 +178,7 @@ export default function BiensList() {
       </header>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_minmax(280px,360px)] xl:items-center">
-        <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 xl:mx-0 xl:flex-wrap xl:overflow-visible xl:px-0">
+        <div className="hide-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 xl:mx-0 xl:px-0">
           {FILTRES_BIENS.map(({ valeur, label }) => (
             <Chip key={valeur} selected={filtre === valeur} onClick={() => setFiltre(valeur)}>
               {label} · {compteurs[valeur] ?? 0}

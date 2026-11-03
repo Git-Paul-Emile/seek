@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Plus, Star, Upload, Video, X } from "lucide-react";
+import { Camera, Plus, Upload, Video, X } from "lucide-react";
 import { FieldError } from "@/components/ui/FieldError";
 import { cn } from "@/lib/utils";
 import { PHOTO_TAILLE_MAX, PHOTO_TYPES, PHOTOS_MAX, PHOTOS_MIN, VIDEO_TAILLE_MAX, VIDEO_TYPES } from "./etapes";
@@ -36,7 +36,7 @@ function VignettePhoto({ vignette, numero }: { vignette: Vignette; numero: numbe
             title="Choisir comme couverture"
             className="absolute bottom-2 left-2 flex size-8 items-center justify-center rounded-full bg-white text-encre"
           >
-            <Star aria-hidden className="size-4" />
+            <Camera aria-hidden className="size-4" />
           </button>
         )
       )}

@@ -66,7 +66,7 @@ export function TemoignageDialog() {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-encre/50" />
-        <Dialog.Content className="fixed inset-x-0 bottom-0 z-[61] max-h-[90dvh] overflow-y-auto rounded-t-sheet bg-white p-6 shadow-float focus:outline-none sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-sheet">
+        <Dialog.Content className="fixed inset-x-0 bottom-0 z-[61] max-h-[90dvh] overflow-y-auto rounded-t-sheet bg-white p-6 focus:outline-none sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-sheet">
           <div className="grid grid-cols-[1fr_auto] items-start gap-4">
             <Dialog.Title className="text-h3 font-bold text-encre">Partager votre expérience</Dialog.Title>
             <Dialog.Close asChild>

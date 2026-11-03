@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getFormulesPremium,
   payerEtActiverPremium,
@@ -153,6 +153,15 @@ export const useAdminHistoriquePromotions = (params?: {
     queryKey: ["admin-historique-promotions", params],
     queryFn: () => adminGetHistoriquePromotions(params),
   });
+
+/** Nombre de promotions par statut : une page d'un élément suffit pour lire le total. */
+export const useAdminTotauxPromotions = (statuts: string[]) =>
+  useQueries({
+    queries: statuts.map((statut) => ({
+      queryKey: ["admin-historique-promotions", { page: 1, limit: 1, statut }],
+      queryFn: () => adminGetHistoriquePromotions({ page: 1, limit: 1, statut }),
+    })),
+  }).map(({ data }) => data?.pagination?.total);
 
 export const useAdminStatsPromotions = () =>
   useQuery({ queryKey: ["admin-stats-promotions"], queryFn: adminGetStatsPromotions });

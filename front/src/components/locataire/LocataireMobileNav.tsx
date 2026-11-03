@@ -62,7 +62,7 @@ export function LocataireBottomNav() {
 /** Sous-navigation de l'onglet « Logement » : trois pages regroupées sous un seul onglet. */
 export function LogementSousNav() {
   return (
-    <nav aria-label="Mon logement" className="-mx-4 mb-6 overflow-x-auto px-4 lg:hidden">
+    <nav aria-label="Mon logement" className="hide-scrollbar -mx-4 mb-6 overflow-x-auto px-4 lg:hidden">
       <ul className="flex gap-2">
         {SOUS_PAGES_LOGEMENT.map(({ to, label }) => (
           <li key={to}>

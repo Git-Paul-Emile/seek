@@ -77,9 +77,10 @@ export default function Annonces() {
   const filtres: FiltreOption<FiltreAnnonces>[] = [
     { valeur: "EN_ATTENTE", label: "En attente", compteur: m.compteurs?.EN_ATTENTE },
     { valeur: "SIGNALEES", label: "Signalées", compteur: m.compteurs?.SIGNALEES },
-    { valeur: "PUBLIE", label: "Publiées" },
-    { valeur: "REJETE", label: "Rejetées" },
-    { valeur: "TOUS", label: "Toutes" },
+    { valeur: "PUBLIE", label: "Publiées", compteur: m.compteurs?.PUBLIE },
+    { valeur: "REJETE", label: "Rejetées", compteur: m.compteurs?.REJETE },
+    // Même périmètre que la file « Toutes » côté back : ni brouillons ni annonces annulées.
+    { valeur: "TOUS", label: "Toutes", compteur: m.compteurs ? m.compteurs.EN_ATTENTE + m.compteurs.PUBLIE + m.compteurs.REJETE : undefined },
   ];
   const toutCoche = m.selectionnables.length > 0 && m.selectionnables.every(({ id }) => m.selection.has(id));
   const unePartie = !toutCoche && m.selectionnables.some(({ id }) => m.selection.has(id));

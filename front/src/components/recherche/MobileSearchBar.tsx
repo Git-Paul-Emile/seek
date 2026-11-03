@@ -42,7 +42,7 @@ export function MobileSearchBar({ filters, onOpenFilters }: { filters: Filters; 
       <button
         type="button"
         onClick={onOpenFilters}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-filet bg-white px-4 py-2 text-left shadow-card"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-filet bg-white px-4 py-2 text-left"
       >
         <Search aria-hidden className="size-5 shrink-0 text-encre" />
         <span className="min-w-0">

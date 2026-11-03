@@ -54,7 +54,7 @@ export function HomeSearchForm({ search }: { search: HomeSearch }) {
         event.preventDefault();
         search.submit();
       }}
-      className="rounded-sheet bg-white p-2 shadow-float"
+      className="rounded-sheet bg-white p-2"
     >
       <div className="divide-y divide-filet lg:grid lg:grid-cols-[1fr_1.1fr_1fr] lg:divide-x lg:divide-y-0">
         <SearchField

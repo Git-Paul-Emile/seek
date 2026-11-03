@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { formatFcfa } from "@/lib/fcfa";
 import { formatDateLongue } from "@/lib/dates";
+import { trouverBailEnCours } from "@/components/locataire/bailEnCours";
 
 // Paiements du locataire : chaque loyer avec son statut, la déclaration d'un paiement
 // et les quittances à télécharger (charte, planches 25 et 34).
@@ -69,7 +70,7 @@ function detailEcheance(echeance: Echeance) {
 
 export default function PaiementsLocatairePage() {
   const { locataire } = useLocataireAuth();
-  const bail = locataire?.bails?.find((b) => b.statut === "ACTIF" || b.statut === "EN_PREAVIS");
+  const bail = trouverBailEnCours(locataire?.bails);
   const { data: echeancierBrut = [], isLoading } = useLocataireEcheancier(Boolean(bail));
   const quittances = useQuittancesTelechargement();
   const confirmerEspeces = useConfirmerPaiementEspeces();
@@ -108,7 +109,6 @@ export default function PaiementsLocatairePage() {
   const lignes = echeancier
     .filter((e) => filtre === "TOUT" || e.statut === filtre)
     .sort((a, b) => ORDRE[a.statut] - ORDRE[b.statut] || new Date(a.dateEcheance).getTime() - new Date(b.dateEcheance).getTime());
-  const peutDeclarer = bail.statut === "ACTIF";
 
   const confirmer = (echeance: Echeance) =>
     confirmerEspeces.mutate(
@@ -135,7 +135,7 @@ export default function PaiementsLocatairePage() {
               Toutes les quittances
             </Button>
           )}
-          {prochain && peutDeclarer && (
+          {prochain && (
             <Button onClick={() => setDeclarer(true)}>
               <Check aria-hidden />
               J'ai payé un loyer
@@ -176,7 +176,7 @@ export default function PaiementsLocatairePage() {
         <h2 id="titre-loyers" className="sr-only">
           Mes loyers
         </h2>
-        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
+        <div className="hide-scrollbar -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
           {FILTRES.map(({ valeur, label }) => {
             const nombre = compter(valeur);
             return (

@@ -19,6 +19,9 @@ import { STATUT_ANNONCE } from "@/components/admin/annonces/useModerationAnnonce
 import { BlocChargement, CarteAdmin, EnTeteAdmin, Initiales, SectionAdmin } from "@/components/admin/table/Tableau";
 import { formatFcfa, libelleFrequence } from "@/lib/fcfa";
 import { referenceBien } from "@/lib/referenceBien";
+import { cn } from "@/lib/utils";
+import { iconeEquipement } from "@/lib/iconesEquipements";
+import { CaracteristiquesGrid } from "@/components/annonce-detail/CaracteristiquesGrid";
 
 // Fiche complète d'une annonce pour la modération : photos et contenu à gauche, informations
 // et décision à droite (même règle que la planche 41 : note obligatoire en cas de rejet).
@@ -153,6 +156,23 @@ function Decision({ bien, onSupprimer }: { bien: Bien; onSupprimer: () => void }
   );
 }
 
+/** Équipements, meubles ou options, chacun avec son icône (coche si aucune ne correspond). */
+function ListeIcones({ libelles, className }: { libelles: string[]; className?: string }) {
+  return (
+    <ul className={cn("grid gap-x-6 gap-y-3 sm:grid-cols-2", className)}>
+      {libelles.map((libelle) => {
+        const Icon = iconeEquipement(libelle);
+        return (
+          <li key={libelle} className="flex items-center gap-3 text-body-m text-encre">
+            <Icon aria-hidden className="size-5 shrink-0 text-baobab" strokeWidth={1.75} />
+            {libelle}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function AnnonceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -183,17 +203,6 @@ export default function AnnonceDetail() {
   const statut = STATUT_ANNONCE[bien.statutAnnonce];
   const frequence = libelleFrequence(bien.frequencePaiement);
   const lieu = [bien.adresse, bien.quartier, bien.ville, bien.region, bien.pays].filter(Boolean).join(", ");
-
-  const caracteristiques = [
-    { libelle: "Surface", valeur: bien.surface ? `${bien.surface} m²` : null },
-    { libelle: "Chambres", valeur: bien.nbChambres },
-    { libelle: "Salles de bain", valeur: bien.nbSdb },
-    { libelle: "Salons", valeur: bien.nbSalons },
-    { libelle: "Cuisines", valeur: bien.nbCuisines },
-    { libelle: "WC", valeur: bien.nbWc },
-    { libelle: "Étage", valeur: bien.etage },
-    { libelle: "Étages", valeur: bien.nbEtages },
-  ].filter(({ valeur }) => valeur !== null && valeur !== undefined);
 
   const options = [
     { libelle: "Meublé", actif: bien.meuble },
@@ -238,53 +247,21 @@ export default function AnnonceDetail() {
             </SectionAdmin>
           )}
 
-          {(caracteristiques.length > 0 || options.length > 0) && (
-            <SectionAdmin titre="Caractéristiques">
-              {caracteristiques.length > 0 && (
-                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {caracteristiques.map(({ libelle, valeur }) => (
-                    <div key={libelle} className="rounded-control bg-surface p-3">
-                      <dt className="text-caption text-texte2">{libelle}</dt>
-                      <dd className="mt-1 text-title font-semibold text-encre">{String(valeur)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              {options.length > 0 && (
-                <ul className="mt-4 flex flex-wrap gap-2">
-                  {options.map(({ libelle }) => (
-                    <li key={libelle}>
-                      <StatusBadge tone="positif" size="sm">
-                        {libelle}
-                      </StatusBadge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </SectionAdmin>
-          )}
+          <SectionAdmin titre="Caractéristiques">
+            {/* Même rangée que la fiche publique : icônes, une seule ligne qui défile. */}
+            <CaracteristiquesGrid bien={bien} titre={false} />
+            {options.length > 0 && <ListeIcones libelles={options.map(({ libelle }) => libelle)} className="mt-4" />}
+          </SectionAdmin>
 
           {bien.equipements && bien.equipements.length > 0 && (
             <SectionAdmin titre="Équipements">
-              <ul className="flex flex-wrap gap-2">
-                {bien.equipements.map((equipement) => (
-                  <li key={equipement.equipementId} className="rounded-full bg-surface px-3 py-1.5 text-body-m text-encre">
-                    {equipement.equipement.nom}
-                  </li>
-                ))}
-              </ul>
+              <ListeIcones libelles={bien.equipements.map(({ equipement }) => equipement.nom)} />
             </SectionAdmin>
           )}
 
           {bien.meubles && bien.meubles.length > 0 && (
             <SectionAdmin titre="Mobilier">
-              <ul className="flex flex-wrap gap-2">
-                {bien.meubles.map((meuble) => (
-                  <li key={meuble.meubleId} className="rounded-full bg-surface px-3 py-1.5 text-body-m text-encre">
-                    {meuble.meuble.nom} × {meuble.quantite}
-                  </li>
-                ))}
-              </ul>
+              <ListeIcones libelles={bien.meubles.map(({ meuble, quantite }) => (quantite > 1 ? `${meuble.nom} × ${quantite}` : meuble.nom))} />
             </SectionAdmin>
           )}
         </div>

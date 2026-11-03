@@ -9,8 +9,6 @@ import { echeancesARegler, joursAvant, jourMois, nomMois } from "../paiementStat
 interface BlocProchainLoyerProps {
   echeancier: Echeance[];
   quittanceDisponible: (echeance: Echeance) => boolean;
-  /** Le back n'accepte une déclaration que sur un bail ACTIF (pas pendant le préavis). */
-  peutDeclarer: boolean;
   onPayer: () => void;
 }
 
@@ -30,7 +28,7 @@ function IndicateurEcheance({ jours }: { jours: number }) {
   );
 }
 
-export function BlocProchainLoyer({ echeancier, quittanceDisponible, peutDeclarer, onPayer }: BlocProchainLoyerProps) {
+export function BlocProchainLoyer({ echeancier, quittanceDisponible, onPayer }: BlocProchainLoyerProps) {
   const prochain = echeancesARegler(echeancier)[0];
   const enConfirmation = echeancier.filter((echeance) => echeance.statut === "EN_ATTENTE_CONFIRMATION").length;
   const dernierPaye = echeancier
@@ -53,12 +51,10 @@ export function BlocProchainLoyer({ echeancier, quittanceDisponible, peutDeclare
             <span className="ml-2 text-h3">FCFA</span>
           </p>
           <p className="mt-2 text-body-l text-white/85">À régler avant le {jourMois(prochain.dateEcheance)}</p>
-          {peutDeclarer && (
-            <Button variant="inverse" size="lg" className="mt-6 w-full" onClick={onPayer}>
-              <Check aria-hidden />
-              J'ai payé ce loyer
-            </Button>
-          )}
+          <Button variant="inverse" size="lg" className="mt-6 w-full" onClick={onPayer}>
+            <Check aria-hidden />
+            J'ai payé ce loyer
+          </Button>
         </>
       ) : (
         <p className="mt-4 font-display text-h3 font-bold">

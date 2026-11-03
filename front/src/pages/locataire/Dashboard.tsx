@@ -17,13 +17,13 @@ import { DerniersPaiements } from "@/components/locataire/accueil/DerniersPaieme
 import { MonBail } from "@/components/locataire/accueil/MonBail";
 import { AlerteEtatDesLieux, InvitationsBail, MessagesProprietaire } from "@/components/locataire/accueil/AvisLocataire";
 import { ContratDialog, PreavisDialog, ResilierDialog, SupprimerCompteDialog } from "@/components/locataire/accueil/BailDialogs";
+import { trouverBailEnCours } from "@/components/locataire/bailEnCours";
 
 // Accueil locataire (charte, planche 34) : rassurant, le logement dans l'arche
 // et le prochain loyer en grand, puis les preuves (bail, paiements, quittances).
 
 type Fenetre = "paiement" | "contrat" | "preavis" | "resilier" | "supprimer" | null;
 
-const STATUTS_BAIL_EN_COURS = ["ACTIF", "EN_PREAVIS"];
 // Les messages de paiement en espèces ont leur propre suivi dans Paiements.
 const TYPE_MESSAGE_ESPECES = "PAIEMENT_ESPECES";
 
@@ -38,7 +38,7 @@ function EnTete({ prenom }: { prenom: string }) {
       <Link
         to="/locataire/notifications"
         aria-label={nbNonLues ? `Notifications, ${nbNonLues} non lues` : "Notifications"}
-        className="relative flex size-14 items-center justify-center rounded-full bg-white text-encre shadow-card lg:hidden"
+        className="relative flex size-14 items-center justify-center rounded-full bg-white text-encre lg:hidden"
       >
         <Bell aria-hidden className="size-6" strokeWidth={1.75} />
         {nbNonLues > 0 && <span aria-hidden className="absolute right-3 top-3 size-3 rounded-full bg-soleil" />}
@@ -49,7 +49,7 @@ function EnTete({ prenom }: { prenom: string }) {
 
 export default function LocataireDashboard() {
   const { locataire } = useLocataireAuth();
-  const bail = locataire?.bails?.find((b) => STATUTS_BAIL_EN_COURS.includes(b.statut));
+  const bail = trouverBailEnCours(locataire?.bails);
   const aUnBail = Boolean(bail);
 
   const [fenetre, setFenetre] = useState<Fenetre>(null);
@@ -83,7 +83,6 @@ export default function LocataireDashboard() {
             <BlocProchainLoyer
               echeancier={echeancier}
               quittanceDisponible={quittances.disponible}
-              peutDeclarer={bail.statut === "ACTIF"}
               onPayer={ouvrir("paiement")}
             />
             <MessagesProprietaire messages={messagesNonLus} proprietaire={proprietaire} />

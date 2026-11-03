@@ -108,7 +108,8 @@ export default function SuspensionsPage() {
     return () => clearTimeout(minuteur);
   }, [recherche]);
 
-  const filtre = { estSuspendu: EST_SUSPENDU[statut], search: rechercheEnvoyee || undefined };
+  // Tous les comptes sont chargés une fois : le filtre de statut et ses compteurs se calculent ici.
+  const filtre = { search: rechercheEnvoyee || undefined };
   const proprietaires = useProprietaires(filtre);
   const locataires = useLocataires(filtre);
   const suspendreProprietaire = useSuspendreProprietaire();
@@ -118,7 +119,15 @@ export default function SuspensionsPage() {
 
   const estProprietaires = publicVise === "proprietaires";
   const requete = estProprietaires ? proprietaires : locataires;
-  const comptes: Compte[] = requete.data?.data ?? [];
+  const tousComptes: Compte[] = requete.data?.data ?? [];
+  const correspond = (compte: Compte, valeur: FiltreStatut) =>
+    EST_SUSPENDU[valeur] === undefined || compte.estSuspendu === EST_SUSPENDU[valeur];
+  const comptes = tousComptes.filter((compte) => correspond(compte, statut));
+  const filtres = FILTRES.map((option) => ({
+    ...option,
+    compteur: requete.data ? tousComptes.filter((compte) => correspond(compte, option.valeur)).length : undefined,
+  }));
+  const compteurPublic = (donnees: { data?: unknown[] } | undefined) => (donnees?.data ? ` · ${donnees.data.length}` : "");
   const enCours = suspendreProprietaire.isPending || reactiverProprietaire.isPending || suspendreLocataire.isPending || reactiverLocataire.isPending;
 
   const fermer = () => {
@@ -162,8 +171,8 @@ export default function SuspensionsPage() {
         <SegmentedControl<Public>
           label="Type de compte"
           options={[
-            { value: "proprietaires", label: "Propriétaires" },
-            { value: "locataires", label: "Locataires" },
+            { value: "proprietaires", label: `Propriétaires${compteurPublic(proprietaires.data)}` },
+            { value: "locataires", label: `Locataires${compteurPublic(locataires.data)}` },
           ]}
           value={publicVise}
           onChange={(valeur) => {
@@ -171,7 +180,7 @@ export default function SuspensionsPage() {
             setOuvert(null);
           }}
         />
-        <FiltresStatut<FiltreStatut> label="Filtrer par statut" options={FILTRES} valeur={statut} onChange={setStatut} />
+        <FiltresStatut<FiltreStatut> label="Filtrer par statut" options={filtres} valeur={statut} onChange={setStatut} />
       </div>
 
       <Tableau label={estProprietaires ? "Propriétaires" : "Locataires"}>

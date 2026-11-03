@@ -1,24 +1,12 @@
 import { useState } from "react";
-import { Car, Check, Droplet, ShieldCheck, Snowflake, Wifi, Zap, type LucideIcon } from "lucide-react";
 import type { Bien } from "@/api/bien";
 import { Button } from "@/components/ui/button";
+import { iconeEquipement } from "@/lib/iconesEquipements";
 
 // « Pour décider » (maquette « Fiche annonce ») : description repliable, équipements en deux
 // colonnes, puis la liste complète des équipements et meubles à la demande.
 
 const APERCU_EQUIPEMENTS = 6;
-
-// Icône choisie d'après le nom saisi par l'admin ; coche par défaut.
-const ICONES: [RegExp, LucideIcon][] = [
-  [/clim/i, Snowflake],
-  [/groupe|électrog|electrog|onduleur/i, Zap],
-  [/gardien|sécurité|securite|vidéo|video/i, ShieldCheck],
-  [/parking|garage/i, Car],
-  [/eau|surpresseur|forage|citerne/i, Droplet],
-  [/wifi|fibre|internet/i, Wifi],
-];
-
-const iconePour = (nom: string) => ICONES.find(([motif]) => motif.test(nom))?.[1] ?? Check;
 
 export function DescriptionEquipements({ bien }: { bien: Bien }) {
   const [descriptionOuverte, setDescriptionOuverte] = useState(false);
@@ -61,7 +49,7 @@ export function DescriptionEquipements({ bien }: { bien: Bien }) {
           </h2>
           <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             {visibles.map((nom) => {
-              const Icon = iconePour(nom);
+              const Icon = iconeEquipement(nom);
               return (
                 <li key={nom} className="flex items-center gap-3 text-body-l text-encre">
                   <Icon aria-hidden className="size-6 shrink-0 text-encre" strokeWidth={1.5} />
@@ -74,11 +62,15 @@ export function DescriptionEquipements({ bien }: { bien: Bien }) {
             <>
               <h3 className="mt-6 font-body text-h3 font-semibold text-encre">Meubles</h3>
               <ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                {meubles.map((nom) => (
-                  <li key={nom} className="text-body-l text-encre">
-                    {nom}
-                  </li>
-                ))}
+                {meubles.map((nom) => {
+                  const Icon = iconeEquipement(nom);
+                  return (
+                    <li key={nom} className="flex items-center gap-3 text-body-l text-encre">
+                      <Icon aria-hidden className="size-6 shrink-0 text-encre" strokeWidth={1.5} />
+                      {nom}
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}

@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import PublicLayout from "@/components/layout/PublicLayout";
-import { PwaUpdatePrompt } from "@/components/pwa/PwaUpdatePrompt";
 import { AuthProvider } from "@/context/AuthContext";
 import { OwnerAuthProvider } from "@/context/OwnerAuthContext";
 import { LocataireAuthProvider } from "@/context/LocataireAuthContext";
@@ -16,6 +15,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { useComptePublicAuth } from "@/context/ComptePublicAuthContext";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import PageTitle from "@/components/PageTitle";
+import DefilementVersErreur from "@/components/form/DefilementVersErreur";
 import GuestRoute from "@/components/admin/GuestRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
 import OwnerGuestRoute from "@/components/owner/OwnerGuestRoute";
@@ -147,7 +147,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
-      <PwaUpdatePrompt />
       <BrowserRouter>
         <SocketProvider>
         <AuthProvider>
@@ -158,6 +157,7 @@ const App = () => (
             <LocataireAuthProvider>
               <AuthSessionBridge />
               <PageTitle />
+              <DefilementVersErreur />
               <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
               <Routes>
                 {/* Routes publiques */}

@@ -4,15 +4,15 @@ import { useQuittancesLocataire } from "@/hooks/useQuittance";
 import { useProprietaireLocataire } from "@/hooks/useProprietaireLocataire";
 import { downloadAllQuittancesZip, generateQuittancePDF, openQuittancePDF, type QuittanceData } from "@/lib/generateQuittance";
 import type { Echeance } from "@/api/bail";
+import { trouverBailEnCours } from "./bailEnCours";
 
 // Quittances du locataire : une quittance existe pour chaque loyer payé et confirmé.
 // Partagé par l'accueil (derniers paiements) et la page Paiements.
 
-const STATUTS_BAIL_EN_COURS = ["ACTIF", "EN_PREAVIS"];
 
 export function useQuittancesTelechargement() {
   const { locataire } = useLocataireAuth();
-  const bailEnCours = locataire?.bails?.find((bail) => STATUTS_BAIL_EN_COURS.includes(bail.statut));
+  const bailEnCours = trouverBailEnCours(locataire?.bails);
   const actif = Boolean(bailEnCours);
   const { data: quittances = [], isLoading } = useQuittancesLocataire(actif);
   const { data: proprietaireData } = useProprietaireLocataire(actif);

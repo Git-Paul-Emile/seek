@@ -69,7 +69,7 @@ export function HeaderSearch() {
       role="search"
       aria-label="Modifier la recherche"
       onSubmit={submit}
-      className="flex max-w-[760px] items-center divide-x divide-filet rounded-full border border-filet bg-white py-1 pl-1 pr-1.5 shadow-card"
+      className="flex max-w-[760px] items-center divide-x divide-filet rounded-full border border-filet bg-white py-1 pl-1 pr-1.5"
     >
       <CompactField label="Type" value={type} onChange={setType}>
         <option value="">Tous les types</option>

@@ -1,3 +1,4 @@
+import { Banknote, Camera, FileText, MapPin, PhoneOff, type LucideIcon } from "lucide-react";
 import { DESCRIPTION_MIN, PHOTOS_MIN } from "@/components/owner/annonce/etapes";
 
 // Contrôles automatiques affichés dans le panneau de décision (charte, planche 41).
@@ -7,6 +8,8 @@ import { DESCRIPTION_MIN, PHOTOS_MIN } from "@/components/owner/annonce/etapes";
 export interface Controle {
   ok: boolean;
   libelle: string;
+  /** Icône du sujet contrôlé, affichée quand le contrôle passe (le triangle sinon). */
+  icone: LucideIcon;
 }
 
 interface AnnonceControlee {
@@ -28,17 +31,19 @@ export function controlerAnnonce(annonce: AnnonceControlee): Controle[] {
   const nbPhotos = annonce.photos.length;
   return [
     nbPhotos >= PHOTOS_MIN
-      ? { ok: true, libelle: `${nbPhotos} photos` }
-      : { ok: false, libelle: `${nbPhotos} photo${nbPhotos > 1 ? "s" : ""} seulement, ${PHOTOS_MIN} minimum` },
+      ? { ok: true, icone: Camera, libelle: `${nbPhotos} photos` }
+      : { ok: false, icone: Camera, libelle: `${nbPhotos} photo${nbPhotos > 1 ? "s" : ""} seulement, ${PHOTOS_MIN} minimum` },
     description.length >= DESCRIPTION_MIN
-      ? { ok: true, libelle: "Description complète" }
-      : { ok: false, libelle: `Description courte : ${description.length} caractères sur ${DESCRIPTION_MIN}` },
+      ? { ok: true, icone: FileText, libelle: "Description complète" }
+      : { ok: false, icone: FileText, libelle: `Description courte : ${description.length} caractères sur ${DESCRIPTION_MIN}` },
     contientCoordonnees(description)
-      ? { ok: false, libelle: "Numéro de téléphone ou e-mail dans la description" }
-      : { ok: true, libelle: "Aucune coordonnée dans la description" },
-    annonce.prix ? { ok: true, libelle: "Prix renseigné" } : { ok: false, libelle: "Prix absent" },
+      ? { ok: false, icone: PhoneOff, libelle: "Numéro de téléphone ou e-mail dans la description" }
+      : { ok: true, icone: PhoneOff, libelle: "Aucune coordonnée dans la description" },
+    annonce.prix
+      ? { ok: true, icone: Banknote, libelle: "Prix renseigné" }
+      : { ok: false, icone: Banknote, libelle: "Prix absent" },
     annonce.quartier && annonce.ville
-      ? { ok: true, libelle: "Quartier et ville renseignés" }
-      : { ok: false, libelle: "Localisation incomplète" },
+      ? { ok: true, icone: MapPin, libelle: "Quartier et ville renseignés" }
+      : { ok: false, icone: MapPin, libelle: "Localisation incomplète" },
   ];
 }

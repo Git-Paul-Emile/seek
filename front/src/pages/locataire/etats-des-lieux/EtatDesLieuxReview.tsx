@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CircleCheck, FileSignature, Loader2, MessageSquareWarning, TriangleAlert } from "lucide-react";
+import { ArrowLeft, CircleCheck, Download, FileSignature, Loader2, MessageSquareWarning, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type { StatutEtatDesLieux } from "@/api/etatDesLieux.api";
 import {
@@ -98,7 +98,15 @@ export default function EtatDesLieuxReview() {
       {edl.statut === "VALIDE" && (
         <p className="flex items-start gap-3 rounded-card bg-baobab-100 p-5 text-body-l text-encre">
           <CircleCheck aria-hidden className="mt-0.5 size-6 shrink-0 text-baobab" />
-          {edl.dateValidation ? `Signé le ${formatDateLongue(edl.dateValidation)}. ` : ""}Ce document est verrouillé et fait foi pour votre bail.
+          <span>
+            {edl.dateValidation ? `Signé le ${formatDateLongue(edl.dateValidation)}. ` : ""}Ce document est verrouillé et fait foi pour votre bail.
+            {edl.documentPdf && (
+              <a href={edl.documentPdf} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 font-semibold text-baobab hover:underline">
+                <Download aria-hidden className="size-5" />
+                Télécharger le document signé (PDF)
+              </a>
+            )}
+          </span>
         </p>
       )}
       {avis && (
@@ -135,7 +143,7 @@ export default function EtatDesLieuxReview() {
       ))}
 
       {enAttente && (
-        <div className="grid gap-4 rounded-card border border-filet bg-white p-5 shadow-float sm:grid-cols-[1fr_auto] sm:items-center lg:sticky lg:bottom-6 lg:z-10">
+        <div className="grid gap-4 rounded-card border border-filet bg-white p-5 sm:grid-cols-[1fr_auto] sm:items-center lg:sticky lg:bottom-6 lg:z-10">
           {contestations.length > 0 ? (
             <>
               <div>
