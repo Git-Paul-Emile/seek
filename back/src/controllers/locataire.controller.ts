@@ -121,8 +121,14 @@ export const deleteLocataire = async (
   res: Response
 ): Promise<void> => {
   const proprietaireId = getOwner(req);
-  await LocataireService.remove(req.params.id as string, proprietaireId);
-  res.status(StatusCodes.NO_CONTENT).send();
+  const { archive } = await LocataireService.remove(req.params.id as string, proprietaireId);
+  res.status(StatusCodes.OK).json(
+    jsonResponse({
+      status: "success",
+      message: archive ? "Ancien locataire archivé, son historique est conservé" : "Locataire supprimé",
+      data: { archive },
+    })
+  );
 };
 
 // ─── Lien d'activation ────────────────────────────────────────────────────────

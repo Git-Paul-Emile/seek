@@ -82,6 +82,15 @@ export const updateOwner = async (
   if (!existing) {
     throw new AppError("Locataire introuvable ou accès refusé", StatusCodes.NOT_FOUND);
   }
+  // Après l'association à un bien, le lien d'activation est parti vers ce numéro :
+  // la fiche n'est plus modifiable par le propriétaire.
+  const bails = await LocataireRepo.findBailsStatuts(id);
+  if (existing.statut !== "INVITE" || bails.length > 0) {
+    throw new AppError(
+      "Les informations du locataire ne sont modifiables qu'avant son association à un bien.",
+      StatusCodes.CONFLICT
+    );
+  }
 
   const updateData: import("../repositories/locataire.repository.js").UpdateLocataireOwnerData = {};
   if (data.nom !== undefined) updateData.nom = data.nom.trim();
@@ -99,31 +108,39 @@ export const updateOwner = async (
 
 // ─── Suppression ──────────────────────────────────────────────────────────────
 
-export const remove = async (id: string, proprietaireId: string) => {
+const STATUTS_BAIL_EN_COURS = ["ACTIF", "EN_PREAVIS", "EN_RENOUVELLEMENT", "EN_ATTENTE"];
+
+/**
+ * Retire un locataire de la liste du propriétaire.
+ *  - bail en cours, chez n'importe quel propriétaire : refusé ;
+ *  - ancien locataire (au moins un bail passé) : archivé, son historique est conservé ;
+ *  - fiche jamais associée à un bien : supprimée définitivement.
+ * Les baux sont lus pour tous les propriétaires : un même locataire peut en avoir plusieurs.
+ */
+export const remove = async (id: string, proprietaireId: string): Promise<{ archive: boolean }> => {
   const locataire = await LocataireRepo.findById(id, proprietaireId);
   if (!locataire) {
     throw new AppError("Locataire introuvable ou accès refusé", StatusCodes.NOT_FOUND);
   }
 
-  const bailActif = locataire.bails?.find((b) =>
-    ["ACTIF", "EN_PREAVIS", "EN_RENOUVELLEMENT", "EN_ATTENTE"].includes(b.statut as string)
-  );
-  if (bailActif) {
+  const bails = await LocataireRepo.findBailsStatuts(id);
+  const enCours = bails.filter((b) => STATUTS_BAIL_EN_COURS.includes(b.statut));
+  if (enCours.some((b) => b.proprietaireId === proprietaireId)) {
     throw new AppError(
-      "Ce locataire a un bail actif ou en cours. Terminez ou résiliez le bail avant de supprimer.",
+      "Ce locataire a un bail en cours. Terminez ou résiliez le bail avant de le retirer.",
+      StatusCodes.CONFLICT
+    );
+  }
+  if (enCours.length > 0) {
+    throw new AppError(
+      "Ce locataire a un bail en cours chez un autre propriétaire : sa fiche ne peut pas être retirée.",
       StatusCodes.CONFLICT
     );
   }
 
-  // Vérifier si le locataire est associé à un logement actif
-  const logementActif = locataire.bails?.find(
-    (b) => b.bien && b.bien.actif === true
-  );
-  if (logementActif) {
-    throw new AppError(
-      "Ce locataire est associé à un logement actif. Vous ne pouvez pas supprimer ce compte.",
-      StatusCodes.CONFLICT
-    );
+  if (bails.length > 0) {
+    await LocataireRepo.archiver(id);
+    return { archive: true };
   }
 
   const verif = await prisma.locataireVerification.findUnique({
@@ -135,6 +152,7 @@ export const remove = async (id: string, proprietaireId: string) => {
   }
 
   await LocataireRepo.remove(id);
+  return { archive: false };
 };
 
 // ─── Lien d'activation ────────────────────────────────────────────────────────
@@ -151,6 +169,15 @@ export const getLien = async (id: string, proprietaireId: string) => {
       statut: locataire.statut,
       envoye: false,
     };
+  }
+
+  // Le lien d'activation n'est envoyé qu'une fois le locataire associé à un bien (contrat actif).
+  const associe = locataire.bails?.some((b) => b.contrat?.statut === "ACTIF");
+  if (!associe) {
+    throw new AppError(
+      "Le lien d'activation sera envoyé quand ce locataire sera associé à un bien.",
+      StatusCodes.CONFLICT
+    );
   }
 
   // Regénérer le token si expiré ou absent

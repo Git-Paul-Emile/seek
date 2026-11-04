@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, Clock, ClipboardCheck, FileText, Link2, Loader2, Mail, Phone, Trash2, XCircle } from "lucide-react";
+import { CheckCircle, Clock, ClipboardCheck, FileText, Link2, Loader2, Mail, Pencil, Phone, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   useLocataireById,
@@ -174,8 +174,8 @@ export default function LocataireDetail() {
 
   const handleDelete = async () => {
     try {
-      await deleteLocataire.mutateAsync(id!);
-      toast.success("Locataire supprimé");
+      const { archive } = await deleteLocataire.mutateAsync(id!);
+      toast.success(archive ? "Ancien locataire archivé, ses baux et quittances sont conservés" : "Locataire supprimé");
       navigate("/owner/locataires");
     } catch (err: unknown) {
       toast.error(messageErreurApi(err, "La fiche n'a pas pu être supprimée. Réessayez."));
@@ -246,6 +246,8 @@ export default function LocataireDetail() {
     );
   }
 
+  const aDejaUnBail = (locataire.bails?.length ?? 0) > 0;
+  const modifiable = locataire.statut === "INVITE" && !aDejaUnBail;
   const cfg = STATUT_CONFIG[locataire.statut] ?? { label: locataire.statut, color: "bg-surface text-texte2", icon: null };
   const verification = locataire.verification;
   const statutVerification = verification ? (VERIFICATION[verification.statut] ?? VERIFICATION.NOT_VERIFIED) : null;
@@ -273,15 +275,27 @@ export default function LocataireDetail() {
             {cfg.label}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setConfirmDelete(true)}
-          aria-label="Supprimer la fiche du locataire"
-          title="Supprimer"
-          className="flex size-11 items-center justify-center rounded-control border border-bord-champ text-encre hover:bg-surface"
-        >
-          <Trash2 aria-hidden className="size-4" />
-        </button>
+        <div className="flex gap-2">
+          {modifiable && (
+            <Link
+              to={`/owner/locataires/${locataire.id}/modifier`}
+              aria-label="Modifier la fiche du locataire"
+              title="Modifier"
+              className="flex size-11 items-center justify-center rounded-control border border-bord-champ text-encre hover:bg-surface"
+            >
+              <Pencil aria-hidden className="size-4" />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            aria-label={aDejaUnBail ? "Archiver la fiche du locataire" : "Supprimer la fiche du locataire"}
+            title={aDejaUnBail ? "Archiver" : "Supprimer"}
+            className="flex size-11 items-center justify-center rounded-control border border-bord-champ text-encre hover:bg-surface"
+          >
+            <Trash2 aria-hidden className="size-4" />
+          </button>
+        </div>
       </header>
 
       {/* Lien d'activation - uniquement si contrat validé ET locataire pas encore actif */}
@@ -426,9 +440,13 @@ export default function LocataireDetail() {
 
       <ConfirmModal
         open={confirmDelete}
-        title="Supprimer ce locataire ?"
-        message="La fiche sera définitivement supprimée. Cette action est irréversible."
-        confirmLabel="Supprimer"
+        title={aDejaUnBail ? "Archiver cet ancien locataire ?" : "Supprimer ce locataire ?"}
+        message={
+          aDejaUnBail
+            ? "Il disparaîtra de votre liste et ne pourra plus se connecter. Ses baux, échéanciers et quittances restent consultables depuis vos biens."
+            : "La fiche sera définitivement supprimée. Cette action est irréversible."
+        }
+        confirmLabel={aDejaUnBail ? "Archiver" : "Supprimer"}
         cancelLabel="Annuler"
         variant="danger"
         isPending={deleteLocataire.isPending}

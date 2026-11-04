@@ -121,8 +121,10 @@ export const updateLocataireApi = async (
   return data.data;
 };
 
-export const deleteLocataireApi = async (id: string): Promise<void> => {
-  await api.delete(`/${id}`);
+/** Supprime la fiche, ou l'archive si le locataire a déjà eu un bail (historique conservé). */
+export const deleteLocataireApi = async (id: string): Promise<{ archive: boolean }> => {
+  const { data } = await api.delete(`/${id}`);
+  return data.data;
 };
 
 export const getLienActivationApi = async (

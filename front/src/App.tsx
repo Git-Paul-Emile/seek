@@ -203,6 +203,7 @@ const App = () => (
                     <Route path="/owner/biens/:id/paiements" element={<PaiementsPage />} />
                     <Route path="/owner/locataires" element={<LocatairesList />} />
                     <Route path="/owner/locataires/ajouter" element={<AddLocataire />} />
+                    <Route path="/owner/locataires/:id/modifier" element={<AddLocataire />} />
                     <Route path="/owner/locataires/:id" element={<LocataireDetail />} />
                     <Route path="/owner/loyers-retard" element={<LoyersEnRetardPage />} />
                     <Route path="/owner/notifications" element={<OwnerNotificationsPage />} />

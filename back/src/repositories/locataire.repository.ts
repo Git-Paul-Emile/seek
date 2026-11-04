@@ -181,6 +181,9 @@ export const searchByContact = async (params: { telephone?: string; email?: stri
 export const findByProprietaire = async (proprietaireId: string) => {
   return prisma.locataire.findMany({
     where: {
+      // Les fiches retirées par le propriétaire (INACTIF) ne sont plus listées : leurs baux
+      // restent consultables. ANCIEN (bail archivé) reste listé dans « Anciens ».
+      statut: { not: "INACTIF" },
       OR: [
         { proprietaireId },
         { bails: { some: { proprietaireId } } },
@@ -218,6 +221,20 @@ export const update = async (
     select: LOCATAIRE_SELECT,
   });
 };
+
+/** Statut et propriétaire de chaque bail du locataire, tous propriétaires confondus. */
+export const findBailsStatuts = async (locataireId: string) =>
+  prisma.bailLocation.findMany({ where: { locataireId }, select: { statut: true, proprietaireId: true } });
+
+/** Retire un ancien locataire (statut INACTIF) sans toucher à ses baux ni à son historique. */
+export const archiver = async (id: string) =>
+  prisma.$transaction([
+    prisma.locataireRefreshToken.deleteMany({ where: { locataireId: id } }),
+    prisma.locataire.update({
+      where: { id },
+      data: { statut: "INACTIF", activationToken: null, tokenExpiresAt: null },
+    }),
+  ]);
 
 export const remove = async (id: string) => {
   return prisma.$transaction(async (tx) => {

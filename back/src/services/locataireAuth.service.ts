@@ -231,6 +231,13 @@ export const login = async (data: {
     );
   }
 
+  if (locataire.statut === "INACTIF") {
+    throw new AppError(
+      "Ce compte a été fermé par votre propriétaire. Contactez-le si vous louez à nouveau un de ses biens.",
+      StatusCodes.FORBIDDEN
+    );
+  }
+
   if (locataire.statut !== "ACTIF") {
     throw new AppError(
       "Votre compte n'est pas encore activé. Utilisez le lien d'activation envoyé par votre propriétaire.",

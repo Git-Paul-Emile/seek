@@ -28,7 +28,7 @@ const BAIL_STATUT: Record<string, { label: string; tone: StatusTone }> = {
 };
 
 const COMPTE: Record<string, { label: string; tone: StatusTone }> = {
-  INVITE: { label: "Invitation envoyée", tone: "attente" },
+  INVITE: { label: "Compte à activer", tone: "attente" },
   ACTIF: { label: "Compte actif", tone: "positif" },
   INACTIF: { label: "Inactif", tone: "neutre" },
 };
