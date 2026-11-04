@@ -136,6 +136,13 @@ router.get(
   controllerWrapper(BienController.getAnnoncePublie)
 );
 
+/** GET /api/biens/public/:id/etablissements - établissements les plus proches, un par catégorie */
+router.get(
+  "/public/:id/etablissements",
+  validateId,
+  controllerWrapper(BienController.getEtablissementsAnnonce)
+);
+
 /** GET /api/biens/public/:id/similaires - annonces similaires */
 router.get(
   "/public/:id/similaires",

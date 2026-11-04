@@ -303,6 +303,13 @@ export const getStatsFavorisBienController = async (req: Request, res: Response)
 
 // ─── Public - annonces similaires ────────────────────────────────────────────
 
+export const getEtablissementsAnnonce = async (req: Request, res: Response): Promise<void> => {
+  const etablissements = await BienService.getEtablissementsAnnoncePublie(req.params.id as string);
+  res.status(StatusCodes.OK).json(
+    jsonResponse({ status: "success", message: "Établissements proches récupérés", data: etablissements })
+  );
+};
+
 export const getAnnoncesSimilaires = async (req: Request, res: Response): Promise<void> => {
   const bienId = req.params.id as string;
   const bien = await BienService.getAnnoncePublieById(bienId);

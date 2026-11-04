@@ -301,6 +301,11 @@ export const fetchDernieresAnnonces = (limit: number = 10): Promise<BienAvecIsNe
 export const fetchAnnoncePublique = (id: string): Promise<Bien> =>
   api.get<{ data: Bien }>(`/public/${id}`).then((r) => r.data.data);
 
+// ─── Public API: établissements proches (un par catégorie) ──────────────────
+
+export const fetchEtablissementsProches = (id: string): Promise<Etablissement[]> =>
+  api.get<{ data: Etablissement[] }>(`/public/${id}/etablissements`).then((r) => r.data.data);
+
 // ─── Public API: fetch similar announcements ─────────────────────────────────
 
 export const fetchAnnoncesSimilaires = (id: string, limit: number = 4): Promise<Bien[]> =>

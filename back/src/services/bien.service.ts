@@ -12,161 +12,29 @@ import { computeScoreForProprietaire } from "./trustScore.service.js";
 import { emitPropertyAlert, fetchAndEmitStatsGlobales, emitBienUpdated } from "./socket.service.js";
 import { envoyerNotification } from "./notification.service.js";
 import { getLogoFiligraneBuffer } from "./configSite.service.js";
+import { EtablissementsIndisponiblesError, rechercherEtablissementsProches } from "./overpass.service.js";
 
-// ─── Types établissements ─────────────────────────────────────────────────────
+// ─── Établissements proches ───────────────────────────────────────────────────
 
-interface OverpassNode {
-  type: string;
-  id: number;
-  lat: number;
-  lon: number;
-  tags: Record<string, string>;
+/**
+ * Cherche et enregistre les établissements proches d'un bien. Rien n'est enregistré si le
+ * service est indisponible : la recherche sera relancée au prochain affichage de l'annonce.
+ */
+async function enregistrerEtablissementsProches(bienId: string, latitude: number, longitude: number) {
+  const dejaEnregistres = await BienRepository.getEtablissementsByBien(bienId);
+  if (dejaEnregistres.length > 0) return dejaEnregistres;
+  const etablissements = await rechercherEtablissementsProches(latitude, longitude);
+  if (etablissements.length === 0) return [];
+  // Une autre requête a pu enregistrer la liste pendant la recherche.
+  const existants = await BienRepository.getEtablissementsByBien(bienId);
+  if (existants.length > 0) return existants;
+  await BienRepository.createEtablissements(etablissements.map((e) => ({ ...e, bienId })));
+  return BienRepository.getEtablissementsByBien(bienId);
 }
 
-const ETABLISSEMENT_QUERIES: { type: string; label: string; query: string }[] = [
-  { type: "hopital", label: "Hôpital", query: '["amenity"="hospital"]' },
-  { type: "pharmacie", label: "Pharmacie", query: '["amenity"="pharmacy"]' },
-  { type: "ecole_maternelle", label: "École maternelle", query: '["amenity"="kindergarten"]' },
-  { type: "ecole_primaire", label: "École primaire", query: '["amenity"="school"]["school"="primary"]' },
-  { type: "college", label: "Collège", query: '["amenity"="school"]["school"="secondary"]' },
-  { type: "lycee", label: "Lycée", query: '["amenity"="school"]["school"="high_school"]' },
-  { type: "universite", label: "Université", query: '["amenity"="university"]' },
-  { type: "supermarche", label: "Supermarché", query: '["shop"="supermarket"]' },
-  { type: "marche", label: "Marché", query: '["amenity"="marketplace"]' },
-  { type: "boulangerie", label: "Boulangerie", query: '["shop"="bakery"]' },
-  { type: "mosquee", label: "Mosquée", query: '["amenity"="place_of_worship"]["religion"="muslim"]' },
-  { type: "eglise", label: "Église", query: '["amenity"="place_of_worship"]["religion"="christian"]' },
-  { type: "gendarmerie", label: "Gendarmerie", query: '["amenity"="police"]' },
-  { type: "pompiers", label: "Caserne des pompiers", query: '["amenity"="fire_station"]' },
-  { type: "mairie", label: "Mairie", query: '["amenity"="townhall"]' },
-  { type: "arret_bus", label: "Arrêt de bus", query: '["highway"="bus_stop"]' },
-  { type: "station_brt", label: "Station BRT", query: '["railway"="station"]' },
-  { type: "route_principale", label: "Route principale", query: '["highway"="primary"]' },
-];
-
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-async function queryOverpass(
-  lat: number,
-  lon: number,
-  queries: { type: string; label: string; query: string }[],
-  radius: number
-): Promise<{ elements: OverpassNode[]; ok: boolean }> {
-  const unionParts = queries
-    .map(({ query }) => `node${query}(around:${radius},${lat},${lon});`)
-    .join("\n");
-  const overpassQuery = `[out:json][timeout:25];\n(\n${unionParts}\n);\nout body;`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `data=${encodeURIComponent(overpassQuery)}`,
-    signal: controller.signal,
-  });
-  clearTimeout(timeoutId);
-
-  if (!response.ok) return { elements: [], ok: false };
-  const json = await response.json() as { elements: OverpassNode[] };
-  return { elements: json.elements ?? [], ok: true };
-}
-
-function pickNearest(
-  elements: OverpassNode[],
-  lat: number,
-  lon: number,
-  queries: { type: string; label: string; query: string }[]
-): Map<string, { node: OverpassNode; dist: number; label: string }> {
-  const found = new Map<string, { node: OverpassNode; dist: number; label: string }>();
-  for (const { type, label } of queries) {
-    let nearest: OverpassNode | null = null;
-    let nearestDist = Infinity;
-    for (const el of elements) {
-      if (!matchesType(el, type)) continue;
-      const dist = haversineDistance(lat, lon, el.lat, el.lon);
-      if (dist < nearestDist) { nearestDist = dist; nearest = el; }
-    }
-    if (nearest) found.set(type, { node: nearest, dist: nearestDist, label });
-  }
-  return found;
-}
-
-async function fetchNearestEtablissements(
-  lat: number,
-  lon: number
-): Promise<BienRepository.EtablissementData[]> {
-  const results: BienRepository.EtablissementData[] = [];
-
-  try {
-    // 1st pass — 5 km
-    const { elements, ok } = await queryOverpass(lat, lon, ETABLISSEMENT_QUERIES, 5000);
-    if (!ok) return results;
-
-    const found = pickNearest(elements, lat, lon, ETABLISSEMENT_QUERIES);
-
-    // Types absent from the 5 km radius
-    const missing = ETABLISSEMENT_QUERIES.filter(({ type }) => !found.has(type));
-
-    // 2nd pass — 50 km for missing types only
-    if (missing.length > 0) {
-      const { elements: elemsFar } = await queryOverpass(lat, lon, missing, 50000);
-      const foundFar = pickNearest(elemsFar, lat, lon, missing);
-      foundFar.forEach((v, type) => found.set(type, v));
-    }
-
-    found.forEach(({ node, dist, label }, type) => {
-      results.push({
-        bienId: "",
-        type,
-        nom: node.tags?.name ?? label,
-        latitude: node.lat,
-        longitude: node.lon,
-        distance: Math.round(dist),
-      });
-    });
-  } catch {
-    // Overpass unavailable - silently skip
-  }
-
-  return results;
-}
-
-function matchesType(el: OverpassNode, type: string): boolean {
-  const t = el.tags ?? {};
-  switch (type) {
-    case "hopital":          return t.amenity === "hospital";
-    case "pharmacie":        return t.amenity === "pharmacy";
-    case "ecole_maternelle": return t.amenity === "kindergarten";
-    case "ecole_primaire":   return t.amenity === "school" && (t.school === "primary" || !t.school);
-    case "college":          return t.amenity === "school" && t.school === "secondary";
-    case "lycee":            return t.amenity === "school" && (t.school === "high_school" || t.school === "lycee");
-    case "universite":       return t.amenity === "university";
-    case "supermarche":      return t.shop === "supermarket";
-    case "marche":           return t.amenity === "marketplace";
-    case "boulangerie":      return t.shop === "bakery";
-    case "mosquee":          return t.amenity === "place_of_worship" && t.religion === "muslim";
-    case "eglise":           return t.amenity === "place_of_worship" && t.religion === "christian";
-    case "gendarmerie":      return t.amenity === "police";
-    case "pompiers":         return t.amenity === "fire_station";
-    case "mairie":           return t.amenity === "townhall";
-    case "arret_bus":        return t.highway === "bus_stop";
-    case "station_brt":      return t.railway === "station";
-    case "route_principale": return t.highway === "primary";
-    default:                 return false;
-  }
-}
+const journaliserEchecEtablissements = (bienId: string) => (erreur: unknown) => {
+  console.warn(`[etablissements] recherche impossible pour le bien ${bienId} :`, erreur instanceof Error ? erreur.message : erreur);
+};
 
 // ─── Brouillon ────────────────────────────────────────────────────────────────
 
@@ -313,14 +181,9 @@ export const soumettreAnnonce = async (bienId: string, proprietaireId: string) =
   fetchAndEmitStatsGlobales().catch(() => null);
   emitBienUpdated(proprietaireId, bienId);
 
-  // Register nearby establishments asynchronously
+  // Établissements proches recherchés en arrière-plan, sans bloquer la soumission
   if (bien.latitude && bien.longitude) {
-    fetchNearestEtablissements(bien.latitude, bien.longitude)
-      .then(async (etablissements) => {
-        const withBienId = etablissements.map((e) => ({ ...e, bienId: bien.id }));
-        await BienRepository.createEtablissements(withBienId);
-      })
-      .catch(() => {});
+    enregistrerEtablissementsProches(bien.id, bien.latitude, bien.longitude).catch(journaliserEchecEtablissements(bien.id));
   }
 
   return updated;
@@ -532,15 +395,9 @@ export const validerAnnonce = async (
 
     emitPropertyAlert(bienId).catch(() => null);
 
-    // Re-fetch établissements si la 1ère tentative (soumission) avait échoué
+    // Nouvelle tentative si la recherche lancée à la soumission avait échoué
     if (result.latitude && result.longitude && result.etablissements?.length === 0) {
-      fetchNearestEtablissements(result.latitude, result.longitude)
-        .then(async (etablissements) => {
-          if (etablissements.length === 0) return;
-          const withBienId = etablissements.map((e) => ({ ...e, bienId }));
-          await BienRepository.createEtablissements(withBienId);
-        })
-        .catch(() => {});
+      enregistrerEtablissementsProches(bienId, result.latitude, result.longitude).catch(journaliserEchecEtablissements(bienId));
     }
   }
 
@@ -600,6 +457,26 @@ export const searchAnnoncePubliques = async (params: {
 };
 
 // ─── Public - annonce publiée par ID ─────────────────────────────────────────────
+
+/**
+ * Établissements proches d'une annonce publiée : la liste enregistrée, sinon une recherche
+ * immédiate, enregistrée pour les visites suivantes.
+ */
+export const getEtablissementsAnnoncePublie = async (id: string) => {
+  const bien = await BienRepository.getAnnoncePublieById(id);
+  if (!bien) {
+    throw new AppError("Annonce introuvable ou non publiée", StatusCodes.NOT_FOUND);
+  }
+  if (bien.latitude === null || bien.longitude === null) return [];
+  try {
+    return await enregistrerEtablissementsProches(bien.id, bien.latitude, bien.longitude);
+  } catch (erreur) {
+    if (erreur instanceof EtablissementsIndisponiblesError) {
+      throw new AppError("Les lieux utiles autour du bien sont momentanément indisponibles.", StatusCodes.SERVICE_UNAVAILABLE);
+    }
+    throw erreur;
+  }
+};
 
 export const getAnnoncePublieById = async (id: string) => {
   const bien = await BienRepository.getAnnoncePublieById(id);

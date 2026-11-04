@@ -1,28 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Bien, Etablissement } from "@/api/bien";
-import { fetchOverpassEtabs } from "@/api/overpass";
+import { fetchEtablissementsProches, type Bien, type Etablissement } from "@/api/bien";
 
 const UNE_JOURNEE_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Points d'intérêt autour d'un bien : ceux enregistrés par le backend, sinon OpenStreetMap.
+ * L'établissement le plus proche de chaque catégorie autour d'un bien. La fiche publique
+ * les fournit quand ils sont déjà enregistrés ; sinon le backend les recherche et les enregistre.
  * Triés du plus proche au plus loin.
  */
 export function useEtablissementsProches(bien: Bien) {
   const enregistres = bien.etablissements ?? [];
   const aCoordonnees = bien.latitude !== null && bien.longitude !== null;
 
-  const { data: osm = [], isLoading } = useQuery<Etablissement[]>({
-    queryKey: ["etablissements-osm", bien.latitude, bien.longitude],
-    queryFn: () => fetchOverpassEtabs(bien.latitude as number, bien.longitude as number),
+  const { data: recherches = [], isLoading, isError } = useQuery<Etablissement[]>({
+    queryKey: ["etablissements-proches", bien.id],
+    queryFn: () => fetchEtablissementsProches(bien.id),
     enabled: aCoordonnees && enregistres.length === 0,
     staleTime: UNE_JOURNEE_MS,
     retry: false,
   });
 
-  const liste = (enregistres.length > 0 ? enregistres : osm)
+  const aRechercher = enregistres.length === 0;
+  const liste = (aRechercher ? recherches : enregistres)
     .filter((e) => e.distance !== null)
     .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
 
-  return { etablissements: liste, isLoading: isLoading && enregistres.length === 0 };
+  return { etablissements: liste, isLoading: aRechercher && isLoading, isError: aRechercher && isError };
 }

@@ -180,6 +180,9 @@ export const updateStatutAnnonce = async (
   return bien;
 };
 
+export const getEtablissementsByBien = (bienId: string) =>
+  prisma.etablissement.findMany({ where: { bienId }, orderBy: { distance: "asc" } });
+
 export const createEtablissements = async (items: EtablissementData[]) => {
   if (items.length === 0) return;
   return prisma.etablissement.createMany({ data: items });
