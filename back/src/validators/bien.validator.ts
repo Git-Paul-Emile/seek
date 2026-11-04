@@ -128,6 +128,26 @@ export const validerAnnonceSchema = z.object({
 
 export type ValiderAnnonceInput = z.infer<typeof validerAnnonceSchema>;
 
+// ─── Gestion d'une annonce par l'admin ───────────────────────────────────────
+
+export const retirerAnnonceSchema = z.object({
+  note: z
+    .string()
+    .trim()
+    .min(10, "Expliquez au propriétaire pourquoi l'annonce est retirée, en 10 caractères au moins.")
+    .max(1000),
+});
+
+export const adminModifierAnnonceSchema = z
+  .strictObject({
+    titre: z.string().trim().min(3, "Le titre doit contenir au moins 3 caractères.").max(150).optional(),
+    description: z.string().trim().min(10, "La description doit contenir au moins 10 caractères.").max(5000).optional(),
+    prix: z.number().positive("Le prix doit être supérieur à zéro.").optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, "Indiquez au moins un champ à modifier.");
+
+export type AdminModifierAnnonceInput = z.infer<typeof adminModifierAnnonceSchema>;
+
 // ─── Schema pour la file de modération (admin, query string) ──────────────────
 
 export const listAnnoncesAdminQuerySchema = z.object({

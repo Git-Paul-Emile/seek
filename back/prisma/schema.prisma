@@ -1098,6 +1098,7 @@ enum TypeNotification {
   ETAT_DES_LIEUX_MODIFIE
   ANNONCE_VALIDEE
   ANNONCE_REJETEE
+  ANNONCE_MODIFIEE
 }
 
 enum StatutDepot {

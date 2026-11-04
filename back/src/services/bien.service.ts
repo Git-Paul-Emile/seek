@@ -404,6 +404,97 @@ export const validerAnnonce = async (
   return result;
 };
 
+// ─── Gestion d'une annonce par l'admin ───────────────────────────────────────
+
+const notifierProprietaireAnnonce = (
+  bien: Awaited<ReturnType<typeof BienRepository.updateStatutAnnonce>>,
+  type: "ANNONCE_VALIDEE" | "ANNONCE_REJETEE" | "ANNONCE_MODIFIEE",
+  sujet: string,
+  contenu: string
+) => {
+  const proprietaire = bien.proprietaire;
+  if (!proprietaire) return;
+  envoyerNotification({
+    type,
+    target: "owner",
+    telephone: proprietaire.telephone,
+    email: proprietaire.email,
+    sujet,
+    contenu,
+    bienId: bien.id,
+    proprietaireId: proprietaire.id,
+    noSmsEmail: true,
+  }).catch(() => null);
+};
+
+const signalerChangementAnnonce = (bien: { id: string; proprietaireId: string }) => {
+  fetchAndEmitStatsGlobales().catch(() => null);
+  emitBienUpdated(bien.proprietaireId, bien.id);
+};
+
+/**
+ * Retire une annonce publiée : elle repasse au statut REJETE avec la note de l'admin.
+ * Le propriétaire corrige puis la soumet de nouveau, comme après un rejet de modération.
+ */
+export const retirerAnnonce = async (bienId: string, note: string) => {
+  const bien = await BienRepository.getBienById(bienId);
+  if (!bien) throw new AppError("Annonce introuvable", StatusCodes.NOT_FOUND);
+  if (bien.statutAnnonce !== "PUBLIE") {
+    throw new AppError("Seule une annonce publiée peut être retirée de la publication", StatusCodes.BAD_REQUEST);
+  }
+  const result = await BienRepository.updateStatutAnnonce(bienId, "REJETE", note);
+  notifierProprietaireAnnonce(
+    result,
+    "ANNONCE_REJETEE",
+    "Annonce retirée de la publication",
+    `Votre annonce "${result.titre ?? "sans titre"}" a été retirée de la publication : ${note}`
+  );
+  signalerChangementAnnonce(result);
+  return result;
+};
+
+/** Remet en ligne une annonce retirée ou rejetée, sans nouvelle soumission du propriétaire. */
+export const republierAnnonce = async (bienId: string) => {
+  const bien = await BienRepository.getBienById(bienId);
+  if (!bien) throw new AppError("Annonce introuvable", StatusCodes.NOT_FOUND);
+  if (bien.statutAnnonce !== "REJETE") {
+    throw new AppError("Seule une annonce retirée ou rejetée peut être republiée", StatusCodes.BAD_REQUEST);
+  }
+  const result = await BienRepository.updateStatutAnnonce(bienId, "PUBLIE", null);
+  notifierProprietaireAnnonce(
+    result,
+    "ANNONCE_VALIDEE",
+    "Annonce republiée",
+    `Votre annonce "${result.titre ?? "sans titre"}" est de nouveau publiée sur SEEK Immobilier.`
+  );
+  signalerChangementAnnonce(result);
+  return result;
+};
+
+/** Corrige le titre, la description ou le prix d'une annonce ; le propriétaire est prévenu. */
+export const adminModifierAnnonce = async (
+  bienId: string,
+  data: { titre?: string; description?: string; prix?: number }
+) => {
+  const bien = await BienRepository.getBienById(bienId);
+  if (!bien) throw new AppError("Annonce introuvable", StatusCodes.NOT_FOUND);
+  if (bien.statutAnnonce === "BROUILLON") {
+    throw new AppError("Un brouillon appartient encore au propriétaire : il ne peut pas être modifié", StatusCodes.BAD_REQUEST);
+  }
+  const result = await BienRepository.updateContenuAnnonce(bienId, data);
+  const champs = [data.titre !== undefined && "le titre", data.description !== undefined && "la description", data.prix !== undefined && "le prix"]
+    .filter(Boolean)
+    .join(", ");
+  notifierProprietaireAnnonce(
+    result,
+    "ANNONCE_MODIFIEE",
+    "Annonce modifiée par l'équipe Seek",
+    `L'équipe Seek a corrigé ${champs} de votre annonce "${result.titre ?? "sans titre"}".`
+  );
+  signalerChangementAnnonce(result);
+  return result;
+};
+
 export const adminDeleteBien = async (bienId: string) => {
   const bien = await BienRepository.getBienById(bienId);
   if (!bien) throw new AppError("Bien introuvable", StatusCodes.NOT_FOUND);

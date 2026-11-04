@@ -43,6 +43,7 @@ const TYPE_LABELS: Record<string, string> = {
   ETAT_DES_LIEUX_MODIFIE: "État des lieux mis à jour",
   ANNONCE_VALIDEE: "Annonce validée",
   ANNONCE_REJETEE: "Annonce rejetée",
+  ANNONCE_MODIFIEE: "Annonce modifiée par Seek",
 };
 
 // Pas de rouge : les alertes sont en Soleil avec le triangle (planche « Statuts »).

@@ -35,6 +35,30 @@ router.patch(
   controllerWrapper(AnnonceController.validerAnnonce)
 );
 
+/** PATCH /api/annonces/:id/retirer - retirer une annonce publiée, avec une note (admin) */
+router.patch(
+  "/:id/retirer",
+  authenticate,
+  validateId,
+  controllerWrapper(AnnonceController.retirerAnnonce)
+);
+
+/** PATCH /api/annonces/:id/republier - remettre en ligne une annonce retirée ou rejetée (admin) */
+router.patch(
+  "/:id/republier",
+  authenticate,
+  validateId,
+  controllerWrapper(AnnonceController.republierAnnonce)
+);
+
+/** PATCH /api/annonces/:id - corriger le titre, la description ou le prix (admin) */
+router.patch(
+  "/:id",
+  authenticate,
+  validateId,
+  controllerWrapper(AnnonceController.modifierAnnonce)
+);
+
 /** DELETE /api/annonces/:id - supprimer une annonce (admin) */
 router.delete(
   "/:id",

@@ -285,6 +285,21 @@ export const validerAnnonce = (
 export const deleteAnnonceAdmin = (id: string): Promise<void> =>
   annonceApi.delete(`/${id}`).then(() => undefined);
 
+export const retirerAnnonceAdmin = (id: string, note: string): Promise<Bien> =>
+  annonceApi.patch<{ data: Bien }>(`/${id}/retirer`, { note }).then((r) => r.data.data);
+
+export const republierAnnonceAdmin = (id: string): Promise<Bien> =>
+  annonceApi.patch<{ data: Bien }>(`/${id}/republier`).then((r) => r.data.data);
+
+export interface ModificationAnnonceAdmin {
+  titre?: string;
+  description?: string;
+  prix?: number;
+}
+
+export const modifierAnnonceAdmin = (id: string, payload: ModificationAnnonceAdmin): Promise<Bien> =>
+  annonceApi.patch<{ data: Bien }>(`/${id}`, payload).then((r) => r.data.data);
+
 // ─── Public API calls (pour page d'accueil) ─────────────────────────────────────
 
 export interface BienAvecIsNew extends Bien {

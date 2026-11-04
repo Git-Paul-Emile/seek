@@ -5,7 +5,11 @@ import {
   fetchAnnoncesStatusCounts,
   validerAnnonce,
   deleteAnnonceAdmin,
+  retirerAnnonceAdmin,
+  republierAnnonceAdmin,
+  modifierAnnonceAdmin,
   type AnnoncesAdminParams,
+  type ModificationAnnonceAdmin,
 } from "@/api/bien";
 
 const QK_COUNT = "annonces-pending-count";
@@ -65,5 +69,40 @@ export const useDeleteAnnonceAdmin = () => {
       qc.invalidateQueries({ queryKey: [QK_COUNT] });
       qc.invalidateQueries({ queryKey: [QK_COUNTS] });
     },
+  });
+};
+
+/** Après une action admin : la file, les compteurs et la fiche de l'annonce sont rechargés. */
+const useApresActionAdmin = () => {
+  const qc = useQueryClient();
+  return (id: string) => {
+    qc.invalidateQueries({ queryKey: [QK_LIST] });
+    qc.invalidateQueries({ queryKey: [QK_COUNT] });
+    qc.invalidateQueries({ queryKey: [QK_COUNTS] });
+    qc.invalidateQueries({ queryKey: ["biens", id] });
+  };
+};
+
+export const useRetirerAnnonce = () => {
+  const apres = useApresActionAdmin();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) => retirerAnnonceAdmin(id, note),
+    onSuccess: (_bien, { id }) => apres(id),
+  });
+};
+
+export const useRepublierAnnonce = () => {
+  const apres = useApresActionAdmin();
+  return useMutation({
+    mutationFn: (id: string) => republierAnnonceAdmin(id),
+    onSuccess: (_bien, id) => apres(id),
+  });
+};
+
+export const useModifierAnnonceAdmin = () => {
+  const apres = useApresActionAdmin();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ModificationAnnonceAdmin }) => modifierAnnonceAdmin(id, payload),
+    onSuccess: (_bien, { id }) => apres(id),
   });
 };

@@ -165,7 +165,7 @@ export const getDraftByProprietaire = async (proprietaireId: string) => {
 export const updateStatutAnnonce = async (
   id: string,
   statutAnnonce: StatutAnnonce,
-  noteAdmin?: string
+  noteAdmin?: string | null
 ) => {
   const bien = await prisma.bien.update({
     where: { id },
@@ -176,6 +176,16 @@ export const updateStatutAnnonce = async (
     },
     include: BIEN_INCLUDE,
   });
+  invalidateAnnoncesCache();
+  return bien;
+};
+
+/** Correction du contenu d'une annonce par l'admin (titre, description, prix). */
+export const updateContenuAnnonce = async (
+  id: string,
+  data: { titre?: string; description?: string; prix?: number }
+) => {
+  const bien = await prisma.bien.update({ where: { id }, data, include: BIEN_INCLUDE });
   invalidateAnnoncesCache();
   return bien;
 };

@@ -1,24 +1,28 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { Loader2, Mail, MapPin, Phone } from "lucide-react";
 import { useBienById } from "@/hooks/useBien";
-import { useValiderAnnonce, useDeleteAnnonceAdmin } from "@/hooks/useAnnonces";
-import type { Bien } from "@/api/bien";
+import { useValiderAnnonce, useDeleteAnnonceAdmin, useModifierAnnonceAdmin, useRepublierAnnonce, useRetirerAnnonce } from "@/hooks/useAnnonces";
+import type { Bien, ModificationAnnonceAdmin } from "@/api/bien";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import { illustrationForType } from "@/components/brand/illustrationKind";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { Button } from "@/components/ui/button";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { FieldError } from "@/components/ui/FieldError";
+import { FormField } from "@/components/ui/FormField";
+import { Input } from "@/components/ui/input";
+import { SheetDialog } from "@/components/ui/SheetDialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Textarea } from "@/components/ui/textarea";
 import { STATUT_ANNONCE } from "@/components/admin/annonces/useModerationAnnonces";
 import { BlocChargement, CarteAdmin, EnTeteAdmin, Initiales, SectionAdmin } from "@/components/admin/table/Tableau";
 import { formatFcfa, libelleFrequence } from "@/lib/fcfa";
 import { referenceBien } from "@/lib/referenceBien";
+import { messageErreurApi } from "@/lib/erreurApi";
 import { cn } from "@/lib/utils";
 import { iconeEquipement } from "@/lib/iconesEquipements";
 import { CaracteristiquesGrid } from "@/components/annonce-detail/CaracteristiquesGrid";
@@ -28,6 +32,8 @@ import { CaracteristiquesGrid } from "@/components/annonce-detail/Caracteristiqu
 
 const RETOUR = { to: "/admin/annonces", label: "Annonces" };
 const NOTE_MIN = 10;
+const TITRE_MIN = 3;
+const DESCRIPTION_MIN_ADMIN = 10;
 
 const dateLongue = (valeur: string) => format(new Date(valeur), "d MMMM yyyy", { locale: fr });
 
@@ -78,7 +84,155 @@ function Ligne({ libelle, children }: { libelle: string; children: ReactNode }) 
   );
 }
 
-function Decision({ bien, onSupprimer }: { bien: Bien; onSupprimer: () => void }) {
+/** Correction du titre, de la description ou du prix ; seuls les champs changés sont envoyés. */
+function ModificationAnnonce({ bien, open, onOpenChange }: { bien: Bien; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const modification = useModifierAnnonceAdmin();
+  const [titre, setTitre] = useState(bien.titre ?? "");
+  const [description, setDescription] = useState(bien.description ?? "");
+  const [prix, setPrix] = useState(bien.prix ? String(bien.prix) : "");
+  const [erreurs, setErreurs] = useState<Partial<Record<"titre" | "description" | "prix" | "global", string>>>({});
+
+  const enregistrer = (event: FormEvent) => {
+    event.preventDefault();
+    const payload: ModificationAnnonceAdmin = {};
+    const nouvelles: typeof erreurs = {};
+    if (titre.trim() !== (bien.titre ?? "")) {
+      if (titre.trim().length < TITRE_MIN) nouvelles.titre = `Le titre doit contenir au moins ${TITRE_MIN} caractères.`;
+      payload.titre = titre.trim();
+    }
+    if (description.trim() !== (bien.description ?? "")) {
+      if (description.trim().length < DESCRIPTION_MIN_ADMIN) {
+        nouvelles.description = `La description doit contenir au moins ${DESCRIPTION_MIN_ADMIN} caractères.`;
+      }
+      payload.description = description.trim();
+    }
+    const prixSaisi = Number(prix.replace(/\s/g, ""));
+    if (prix.trim() && prixSaisi !== bien.prix) {
+      if (!Number.isFinite(prixSaisi) || prixSaisi <= 0) nouvelles.prix = "Saisissez un prix supérieur à zéro, en FCFA.";
+      payload.prix = prixSaisi;
+    }
+    if (Object.keys(payload).length === 0) nouvelles.global = "Aucun changement à enregistrer.";
+    setErreurs(nouvelles);
+    if (Object.keys(nouvelles).length > 0) return;
+    modification.mutate(
+      { id: bien.id, payload },
+      {
+        onSuccess: () => {
+          toast.success("Annonce modifiée, le propriétaire est prévenu");
+          onOpenChange(false);
+        },
+        onError: (err) => setErreurs({ global: messageErreurApi(err, "La modification n'a pas pu être enregistrée. Réessayez.") }),
+      },
+    );
+  };
+
+  return (
+    <SheetDialog open={open} onOpenChange={onOpenChange} title="Modifier l'annonce">
+      <form onSubmit={enregistrer} noValidate className="space-y-5">
+        <FormField label="Titre" error={erreurs.titre}>
+          <Input value={titre} onChange={(e) => setTitre(e.target.value)} />
+        </FormField>
+        <FormField label="Description" error={erreurs.description}>
+          <Textarea rows={6} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </FormField>
+        <FormField label="Prix" hint="(FCFA)" error={erreurs.prix}>
+          <Input inputMode="numeric" value={prix} onChange={(e) => setPrix(e.target.value)} />
+        </FormField>
+        {erreurs.global && <FieldError id="modification-erreur">{erreurs.global}</FieldError>}
+        <p className="text-caption text-texte2">Le propriétaire reçoit une notification qui liste les champs corrigés.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button type="submit" disabled={modification.isPending}>
+            {modification.isPending && <Loader2 aria-hidden className="animate-spin" />}
+            Enregistrer
+          </Button>
+        </div>
+      </form>
+    </SheetDialog>
+  );
+}
+
+/** Retirer une annonce publiée (motif obligatoire) ou republier une annonce retirée ou rejetée. */
+function Publication({ bien }: { bien: Bien }) {
+  const retrait = useRetirerAnnonce();
+  const republication = useRepublierAnnonce();
+  const [note, setNote] = useState("");
+  const [erreur, setErreur] = useState<string>();
+  const idNote = useId();
+
+  if (bien.statutAnnonce === "REJETE") {
+    return (
+      <Button
+        className="w-full"
+        disabled={republication.isPending}
+        onClick={() =>
+          republication.mutate(bien.id, {
+            onSuccess: () => toast.success("Annonce republiée, le propriétaire est prévenu"),
+            onError: (err) => toast.error(messageErreurApi(err, "L'annonce n'a pas pu être republiée. Réessayez.")),
+          })
+        }
+      >
+        {republication.isPending && <Loader2 aria-hidden className="animate-spin" />}
+        Republier l'annonce
+      </Button>
+    );
+  }
+
+  if (bien.statutAnnonce !== "PUBLIE") return null;
+
+  const retirer = () => {
+    if (note.trim().length < NOTE_MIN) {
+      setErreur(`Expliquez au propriétaire pourquoi l'annonce est retirée, en ${NOTE_MIN} caractères au moins.`);
+      return;
+    }
+    setErreur(undefined);
+    retrait.mutate(
+      { id: bien.id, note: note.trim() },
+      {
+        onSuccess: () => {
+          toast.success("Annonce retirée de la publication, le propriétaire est prévenu");
+          setNote("");
+        },
+        onError: (err) => toast.error(messageErreurApi(err, "L'annonce n'a pas pu être retirée. Réessayez.")),
+      },
+    );
+  };
+
+  return (
+    <div>
+      <label htmlFor={idNote} className="mb-2 block text-body-m font-semibold text-encre">
+        Motif du retrait
+      </label>
+      <Textarea
+        id={idNote}
+        rows={3}
+        value={note}
+        aria-invalid={Boolean(erreur)}
+        aria-describedby={`${idNote}-aide`}
+        onChange={(event) => {
+          setNote(event.target.value);
+          setErreur(undefined);
+        }}
+        placeholder="Bien déjà loué, photos trompeuses, prix incorrect…"
+      />
+      {erreur ? (
+        <FieldError id={`${idNote}-aide`}>{erreur}</FieldError>
+      ) : (
+        <p id={`${idNote}-aide`} className="mt-2 text-caption text-texte2">
+          L'annonce n'est plus visible. Le propriétaire reçoit ce motif et peut la soumettre de nouveau.
+        </p>
+      )}
+      <Button variant="outline" className="mt-3 w-full" onClick={retirer} disabled={retrait.isPending}>
+        {retrait.isPending && <Loader2 aria-hidden className="animate-spin" />}
+        Retirer de la publication
+      </Button>
+    </div>
+  );
+}
+
+function Decision({ bien, onSupprimer, onModifier }: { bien: Bien; onSupprimer: () => void; onModifier: () => void }) {
   const navigate = useNavigate();
   const valider = useValiderAnnonce();
   const [note, setNote] = useState("");
@@ -112,9 +266,17 @@ function Decision({ bien, onSupprimer }: { bien: Bien; onSupprimer: () => void }
             <p className="mt-1 text-texte2">{bien.noteAdmin}</p>
           </div>
         )}
-        <Button variant="outline" className="w-full" onClick={onSupprimer}>
-          Supprimer l'annonce
-        </Button>
+        <div className="space-y-3">
+          <Publication bien={bien} />
+          {bien.statutAnnonce !== "BROUILLON" && (
+            <Button variant="outline" className="w-full" onClick={onModifier}>
+              Modifier le titre, la description ou le prix
+            </Button>
+          )}
+          <Button variant="outline" className="w-full" onClick={onSupprimer}>
+            Supprimer l'annonce
+          </Button>
+        </div>
       </SectionAdmin>
     );
   }
@@ -152,6 +314,9 @@ function Decision({ bien, onSupprimer }: { bien: Bien; onSupprimer: () => void }
           Valider
         </Button>
       </div>
+      <Button variant="link" className="mt-3" onClick={onModifier}>
+        Corriger une erreur avant de valider
+      </Button>
     </SectionAdmin>
   );
 }
@@ -179,6 +344,7 @@ export default function AnnonceDetail() {
   const { data: bien, isLoading, isError } = useBienById(id ?? "");
   const suppression = useDeleteAnnonceAdmin();
   const [aSupprimer, setASupprimer] = useState(false);
+  const [enModification, setEnModification] = useState(false);
 
   if (isLoading) {
     return (
@@ -267,7 +433,7 @@ export default function AnnonceDetail() {
         </div>
 
         <aside aria-label="Informations et décision" className="space-y-6">
-          <Decision bien={bien} onSupprimer={() => setASupprimer(true)} />
+          <Decision bien={bien} onSupprimer={() => setASupprimer(true)} onModifier={() => setEnModification(true)} />
 
           {bien.proprietaire && (
             <SectionAdmin titre="Propriétaire">
@@ -323,6 +489,8 @@ export default function AnnonceDetail() {
           </SectionAdmin>
         </aside>
       </div>
+
+      {enModification && <ModificationAnnonce bien={bien} open={enModification} onOpenChange={setEnModification} />}
 
       <ConfirmModal
         open={aSupprimer}

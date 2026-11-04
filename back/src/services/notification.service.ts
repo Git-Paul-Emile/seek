@@ -32,7 +32,8 @@ export type TypeNotif =
   | "ETAT_DES_LIEUX_VALIDE"
   | "ETAT_DES_LIEUX_MODIFIE"
   | "ANNONCE_VALIDEE"
-  | "ANNONCE_REJETEE";
+  | "ANNONCE_REJETEE"
+  | "ANNONCE_MODIFIEE";
 
 export interface NotificationPayload {
   type: TypeNotif;
