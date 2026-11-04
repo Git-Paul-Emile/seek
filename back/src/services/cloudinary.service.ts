@@ -20,7 +20,9 @@ export const uploadImage = async (
   buffer: Buffer,
   folder: string,
   options?: OptimizeOptions,
-  watermarkLogoBuffer?: Buffer | null
+  watermarkLogoBuffer?: Buffer | null,
+  /** Identifiant stable : un nouvel envoi écrase le fichier au lieu d'en créer un autre. */
+  publicId?: string
 ): Promise<CloudinaryUploadResult> => {
   let optimized = await optimizeImage(buffer, options);
 
@@ -30,7 +32,7 @@ export const uploadImage = async (
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "image", format: "webp" },
+      { folder, resource_type: "image", format: "webp", ...(publicId ? { public_id: publicId, overwrite: true } : {}) },
       (
         error: UploadApiErrorResponse | undefined,
         result: UploadApiResponse | undefined
@@ -53,13 +55,23 @@ export const uploadImage = async (
 /**
  * Upload une vidéo vers Cloudinary (resource_type: video).
  */
+/** Délai maximal d'envoi d'une vidéo (100 Mo au plus) : plus long que les 60 s par défaut du SDK. */
+const DELAI_ENVOI_VIDEO_MS = 180_000;
+
 export const uploadVideo = (
   buffer: Buffer,
-  folder: string
+  folder: string,
+  /** Identifiant stable : un nouvel envoi écrase le fichier au lieu d'en créer un autre. */
+  publicId?: string
 ): Promise<CloudinaryUploadResult> => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "video" },
+      {
+        folder,
+        resource_type: "video",
+        timeout: DELAI_ENVOI_VIDEO_MS,
+        ...(publicId ? { public_id: publicId, overwrite: true } : {}),
+      },
       (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
         if (error || !result) {
           return reject(new AppError("Échec de l'upload vidéo vers Cloudinary", StatusCodes.INTERNAL_SERVER_ERROR));

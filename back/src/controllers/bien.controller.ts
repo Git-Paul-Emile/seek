@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
+import { rm } from "node:fs/promises";
 import { StatusCodes } from "http-status-codes";
 import * as BienService from "../services/bien.service.js";
 import { getOwnerStats, getStatsVuesBien, getStatsVuesOwner, getAdminStatsVues, getStatsFavorisOwner, getStatsFavorisBien } from "../repositories/bien.repository.js";
 import { jsonResponse } from "../utils/responseApi.js";
 import { saveDraftSchema } from "../validators/bien.validator.js";
+import { lireEtatTraitement } from "../services/mediasBien.queue.js";
 import { AppError } from "../utils/AppError.js";
 import * as PremiumService from "../services/premium.service.js";
 
@@ -26,8 +28,13 @@ export const saveDraft = async (req: Request, res: Response): Promise<void> => {
     body = req.body;
   }
 
+  // Fichiers temporaires écrits par multer : supprimés si la requête échoue avant la mise en file.
+  const supprimerFichiersRecus = () =>
+    Promise.all([...photoFiles, ...(videoFile ? [videoFile] : [])].map((f) => rm(f.path, { force: true }))).catch(() => null);
+
   const parsed = saveDraftSchema.safeParse(body);
   if (!parsed.success) {
+    await supprimerFichiersRecus();
     res.status(StatusCodes.BAD_REQUEST).json(
       jsonResponse({
         status: "fail",
@@ -38,9 +45,36 @@ export const saveDraft = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const bien = await BienService.saveDraft(parsed.data, proprietaireId, photoFiles, videoFile);
+  let resultat: Awaited<ReturnType<typeof BienService.saveDraft>>;
+  try {
+    resultat = await BienService.saveDraft(parsed.data, proprietaireId, photoFiles, videoFile);
+  } catch (erreur) {
+    await supprimerFichiersRecus();
+    throw erreur;
+  }
+  const { bien, traitementId } = resultat;
+  // 202 : les nouveaux médias sont encore en cours de traitement (suivi par traitementId).
+  res.status(traitementId ? StatusCodes.ACCEPTED : StatusCodes.OK).json(
+    jsonResponse({
+      status: "success",
+      message: traitementId ? "Brouillon enregistré, médias en cours de traitement" : "Brouillon enregistré",
+      data: { ...bien, traitementId },
+    })
+  );
+};
+
+/** GET /api/biens/traitements/:traitementId - progression de l'envoi des médias d'un bien */
+export const getTraitementMedias = async (req: Request, res: Response): Promise<void> => {
+  const proprietaireId = req.owner?.id;
+  if (!proprietaireId) {
+    throw new AppError("Authentification requise", StatusCodes.UNAUTHORIZED);
+  }
+  const traitement = await lireEtatTraitement(req.params.traitementId as string, proprietaireId);
+  if (!traitement) {
+    throw new AppError("Traitement introuvable ou terminé depuis plus de 24 heures", StatusCodes.NOT_FOUND);
+  }
   res.status(StatusCodes.OK).json(
-    jsonResponse({ status: "success", message: "Brouillon enregistré", data: bien })
+    jsonResponse({ status: "success", message: "Progression récupérée", data: traitement })
   );
 };
 

@@ -49,6 +49,13 @@ router.post(
   controllerWrapper(BienController.saveDraft)
 );
 
+/** GET /api/biens/traitements/:traitementId - progression de l'envoi des médias */
+router.get(
+  "/traitements/:traitementId",
+  authenticateOwner,
+  controllerWrapper(BienController.getTraitementMedias)
+);
+
 /** PATCH /api/biens/:id/soumettre - soumettre pour publication */
 router.patch(
   "/:id/soumettre",

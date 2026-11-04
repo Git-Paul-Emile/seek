@@ -1,4 +1,8 @@
 import multer, { MulterError } from "multer";
+import { mkdirSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError.js";
 import { StatusCodes } from "http-status-codes";
@@ -42,8 +46,16 @@ const multerInstance = multer({
 
 // ─── Instance Multer photos + vidéo ──────────────────────────────────────────
 
+// Les médias d'une annonce sont traités par la file « medias-bien » après la réponse HTTP :
+// ils sont écrits sur disque (et non en mémoire, ni dans Redis) le temps du traitement.
+export const DOSSIER_MEDIAS_TEMPORAIRES = path.join(tmpdir(), "seek-medias");
+mkdirSync(DOSSIER_MEDIAS_TEMPORAIRES, { recursive: true });
+
 const multerMedias = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: DOSSIER_MEDIAS_TEMPORAIRES,
+    filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
+  }),
   limits: { fileSize: MAX_VIDEO_SIZE_BYTES, files: MAX_FILES + 1 },
   fileFilter: (_req, file, cb) => {
     if (file.fieldname === "video") {

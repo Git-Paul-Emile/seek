@@ -55,6 +55,9 @@ export const saveDraftSchema = z.object({
   // URL de la vidéo déjà uploadée à conserver
   existingVideoUrl: z.string().optional().nullable(),
 
+  // Soumettre l'annonce une fois les nouveaux médias traités par la file
+  soumettre: z.boolean().optional(),
+
   // Champs dynamiques
   champsValeurs: z.array(
     z.object({

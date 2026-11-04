@@ -12,6 +12,8 @@ import { computeScoreForProprietaire } from "./trustScore.service.js";
 import { emitPropertyAlert, fetchAndEmitStatsGlobales, emitBienUpdated } from "./socket.service.js";
 import { envoyerNotification } from "./notification.service.js";
 import { getLogoFiligraneBuffer } from "./configSite.service.js";
+import { randomUUID } from "node:crypto";
+import { planifierTraitementMedias, type FichierMedia } from "./mediasBien.queue.js";
 import { EtablissementsIndisponiblesError, rechercherEtablissementsProches } from "./overpass.service.js";
 
 // ─── Établissements proches ───────────────────────────────────────────────────
@@ -42,106 +44,122 @@ export const getDraftByProprietaire = async (proprietaireId: string) => {
   return BienRepository.getDraftByProprietaire(proprietaireId);
 };
 
+const versFichierMedia = (file: Express.Multer.File): FichierMedia => ({ chemin: file.path, cle: randomUUID() });
+
+/**
+ * Enregistre le brouillon (ou les modifications d'un bien) sans attendre l'envoi des fichiers.
+ * Les nouvelles photos et la vidéo sont confiées à la file « medias-bien », qui les ajoute au
+ * bien puis, si demandé, soumet l'annonce. Renvoie le bien et l'identifiant de ce traitement.
+ */
 export const saveDraft = async (
   input: SaveDraftInput,
   proprietaireId: string,
   photoFiles: Express.Multer.File[],
   videoFile?: Express.Multer.File
 ) => {
-  const { existingPhotos = [], existingVideoUrl, disponibleLe, ...rest } = input;
+  const { existingPhotos = [], existingVideoUrl, disponibleLe, soumettre = false, ...rest } = input;
+  const avecFichiers = photoFiles.length > 0 || Boolean(videoFile);
 
-  // Upload vidéo si fournie
-  const uploadedVideoUrl = videoFile
-    ? (await CloudinaryService.uploadVideo(videoFile.buffer, "seek/biens/videos")).url
-    : undefined;
-  const videoUrl = uploadedVideoUrl ?? existingVideoUrl ?? undefined;
-
-  // Si un ID est fourni, mettre à jour le bien existant
+  let bienExistant: Awaited<ReturnType<typeof BienRepository.getBienById>> = null;
   if (input.id) {
-    const bien = await BienRepository.getBienById(input.id);
-
-    if (!bien) {
+    bienExistant = await BienRepository.getBienById(input.id);
+    if (!bienExistant) {
       throw new AppError("Bien introuvable", StatusCodes.NOT_FOUND);
     }
-    if (bien.proprietaireId !== proprietaireId) {
+    if (bienExistant.proprietaireId !== proprietaireId) {
       throw new AppError("Non autorisé", StatusCodes.FORBIDDEN);
     }
-
-    const logoBuffer = photoFiles.length > 0 ? await getLogoFiligraneBuffer() : null;
-    const newPhotoUrls = photoFiles.length > 0
-      ? await Promise.all(photoFiles.map((file) => CloudinaryService.uploadImage(file.buffer, "seek/biens", undefined, logoBuffer).then((r) => r.url)))
-      : [];
-
-    const photos = [...(existingPhotos || []), ...newPhotoUrls];
-    // typeLogementId peut ne pas être renvoyé dans un patch partiel : on retombe
-    // sur celui déjà enregistré pour ne pas valider contre "aucun type".
-    const effectiveTypeLogementId = rest.typeLogementId !== undefined ? rest.typeLogementId : bien.typeLogementId;
-    const sanitizedChamps = await sanitizeBienChamps({ ...rest, typeLogementId: effectiveTypeLogementId });
-    const data: BienRepository.BienData = {
-      ...rest,
-      ...sanitizedChamps,
-      proprietaireId,
-      photos,
-      videoUrl: videoUrl ?? null,
-      disponibleLe: disponibleLe ? new Date(disponibleLe) : null,
-    };
-
-    if (rest.prix !== undefined && bien.prix && rest.prix !== null && rest.prix < bien.prix) {
-      const pourcentageBaisse = ((bien.prix - rest.prix) / bien.prix) * 100;
-      if (pourcentageBaisse >= 5) {
-        (data as any).prixAncien = bien.prix;
-        (data as any).dateDerniereModificationPrix = new Date();
-      }
-    }
-
-    return await BienRepository.updateBien(input.id, data);
   }
 
-  // Sinon, utiliser le comportement existant (brouillon)
-  const existing = await BienRepository.getDraftByProprietaire(proprietaireId);
-
-  const logoBuffer = photoFiles.length > 0 ? await getLogoFiligraneBuffer() : null;
-  const newPhotoUrls = photoFiles.length > 0
-    ? await Promise.all(photoFiles.map((file) => CloudinaryService.uploadImage(file.buffer, "seek/biens", undefined, logoBuffer).then((r) => r.url)))
-    : [];
-
-  const photos = [...existingPhotos, ...newPhotoUrls];
-  const sanitizedChamps = await sanitizeBienChamps(rest);
+  // typeLogementId peut ne pas être renvoyé dans un patch partiel : on retombe
+  // sur celui déjà enregistré pour ne pas valider contre "aucun type".
+  const effectiveTypeLogementId =
+    bienExistant && rest.typeLogementId === undefined ? bienExistant.typeLogementId : rest.typeLogementId;
+  const sanitizedChamps = await sanitizeBienChamps({ ...rest, typeLogementId: effectiveTypeLogementId });
   const data: BienRepository.BienData = {
     ...rest,
     ...sanitizedChamps,
     proprietaireId,
-    photos,
-    videoUrl: videoUrl ?? null,
+    // Les nouvelles photos et la nouvelle vidéo sont ajoutées par le traitement en file.
+    photos: existingPhotos,
+    videoUrl: existingVideoUrl ?? null,
     disponibleLe: disponibleLe ? new Date(disponibleLe) : null,
-    statutAnnonce: "BROUILLON",
   };
 
   let saved;
-  if (existing) {
-    saved = await BienRepository.updateBien(existing.id, data);
+  if (bienExistant) {
+    if (rest.prix !== undefined && bienExistant.prix && rest.prix !== null && rest.prix < bienExistant.prix) {
+      const pourcentageBaisse = ((bienExistant.prix - rest.prix) / bienExistant.prix) * 100;
+      if (pourcentageBaisse >= 5) {
+        (data as any).prixAncien = bienExistant.prix;
+        (data as any).dateDerniereModificationPrix = new Date();
+      }
+    }
+    saved = await BienRepository.updateBien(bienExistant.id, data);
   } else {
-    saved = await BienRepository.createBien(data);
+    const existing = await BienRepository.getDraftByProprietaire(proprietaireId);
+    const brouillon: BienRepository.BienData = { ...data, statutAnnonce: "BROUILLON" };
+    saved = existing
+      ? await BienRepository.updateBien(existing.id, brouillon)
+      : await BienRepository.createBien(brouillon);
   }
-  return saved;
+
+  if (!avecFichiers) return { bien: saved, traitementId: null };
+
+  // Refuser tout de suite une soumission incomplète plutôt qu'après l'envoi des fichiers.
+  if (soumettre) {
+    const manquants = await champsManquantsPublication(saved, saved.photos.length + photoFiles.length);
+    if (manquants.length > 0) {
+      throw new AppError(`Champs requis manquants pour la publication : ${manquants.join(", ")}`, StatusCodes.BAD_REQUEST);
+    }
+  }
+
+  const traitementId = await planifierTraitementMedias({
+    bienId: saved.id,
+    proprietaireId,
+    photos: photoFiles.map(versFichierMedia),
+    video: videoFile ? versFichierMedia(videoFile) : null,
+    soumettre,
+  });
+  return { bien: saved, traitementId };
 };
 
-// ─── Soumettre pour publication ───────────────────────────────────────────────
-
-export const soumettreAnnonce = async (bienId: string, proprietaireId: string) => {
+/**
+ * Ajoute au bien les médias envoyés par la file. Rejouable : une photo déjà présente avec la
+ * même clé est remplacée, jamais dupliquée ; la vidéo remplace l'ancienne.
+ */
+export const ajouterMediasTraites = async (
+  bienId: string,
+  photos: { cle: string; url: string }[],
+  video: { cle: string; url: string } | null
+) => {
   const bien = await BienRepository.getBienById(bienId);
+  if (!bien) throw new AppError("Bien introuvable", StatusCodes.NOT_FOUND);
+  const cles = photos.map((photo) => photo.cle);
+  const conservees = bien.photos.filter((url) => !cles.some((cle) => url.includes(`/${cle}.`)));
+  return BienRepository.updateBien(bienId, {
+    proprietaireId: bien.proprietaireId,
+    photos: [...conservees, ...photos.map((photo) => photo.url)],
+    ...(video ? { videoUrl: video.url } : {}),
+  });
+};
 
-  if (!bien) {
-    throw new AppError("Annonce introuvable", StatusCodes.NOT_FOUND);
-  }
-  if (bien.proprietaireId !== proprietaireId) {
-    throw new AppError("Non autorisé", StatusCodes.FORBIDDEN);
-  }
-  if (bien.statutAnnonce !== "BROUILLON" && bien.statutAnnonce !== "REJETE") {
-    throw new AppError("Cette annonce ne peut pas être soumise dans son état actuel", StatusCodes.BAD_REQUEST);
-  }
+/** Champs lus pour décider si un bien peut être publié. */
+interface BienAPublier {
+  titre: string | null;
+  typeLogementId: string | null;
+  typeTransactionId: string | null;
+  statutBienId: string | null;
+  region: string | null;
+  prix: number | null;
+  champsValeurs?: { champId: string; valeur: string }[];
+}
 
-  // Validate required fields
+/** Champs requis manquants pour publier ce bien, avec nbPhotos photos au total. */
+const champsManquantsPublication = async (
+  bien: BienAPublier,
+  nbPhotos: number
+): Promise<string[]> => {
   const missing: string[] = [];
   if (!bien.titre?.trim()) missing.push("titre");
   if (!bien.typeLogementId) missing.push("type de logement");
@@ -149,7 +167,7 @@ export const soumettreAnnonce = async (bienId: string, proprietaireId: string) =
   if (!bien.statutBienId) missing.push("statut du bien");
   if (!bien.region?.trim()) missing.push("région");
   if (bien.prix === null || bien.prix === undefined) missing.push("prix");
-  if (!bien.photos || bien.photos.length < 3) missing.push("au moins 3 photos");
+  if (nbPhotos < 3) missing.push("au moins 3 photos");
 
   if (bien.typeLogementId) {
     const champsConfig = await TypeLogementChampRepository.findByTypeLogement(bien.typeLogementId);
@@ -167,7 +185,25 @@ export const soumettreAnnonce = async (bienId: string, proprietaireId: string) =
       if (!valeur) missing.push(cfg.champ.nom);
     }
   }
+  return missing;
+};
 
+// ─── Soumettre pour publication ───────────────────────────────────────────────
+
+export const soumettreAnnonce = async (bienId: string, proprietaireId: string) => {
+  const bien = await BienRepository.getBienById(bienId);
+
+  if (!bien) {
+    throw new AppError("Annonce introuvable", StatusCodes.NOT_FOUND);
+  }
+  if (bien.proprietaireId !== proprietaireId) {
+    throw new AppError("Non autorisé", StatusCodes.FORBIDDEN);
+  }
+  if (bien.statutAnnonce !== "BROUILLON" && bien.statutAnnonce !== "REJETE") {
+    throw new AppError("Cette annonce ne peut pas être soumise dans son état actuel", StatusCodes.BAD_REQUEST);
+  }
+
+  const missing = await champsManquantsPublication(bien, bien.photos?.length ?? 0);
   if (missing.length > 0) {
     throw new AppError(
       `Champs requis manquants pour la publication : ${missing.join(", ")}`,
