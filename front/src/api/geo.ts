@@ -34,6 +34,12 @@ export interface Quartier {
   };
 }
 
+/** Quartier connu le plus proche d'une position, avec sa ville et son pays. */
+export interface QuartierProche extends Quartier {
+  ville: Ville & { pays: Pays };
+  distanceKm: number;
+}
+
 // ─── Public ───────────────────────────────────────────────────────────────────
 
 export const fetchPays = (): Promise<Pays[]> =>
@@ -44,6 +50,9 @@ export const fetchVilles = (paysId: string): Promise<Ville[]> =>
 
 export const fetchQuartiersByVille = (villeId: string): Promise<Quartier[]> =>
   api.get<{ data: Quartier[] }>(`/villes/${villeId}/quartiers`).then((r) => r.data.data);
+
+export const fetchQuartierProche = (lat: number, lng: number): Promise<QuartierProche> =>
+  api.get<{ data: QuartierProche }>("/quartiers/proche", { params: { lat, lng } }).then((r) => r.data.data);
 
 // ─── Admin - Pays ─────────────────────────────────────────────────────────────
 

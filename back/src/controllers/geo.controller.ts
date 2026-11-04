@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import * as GeoRepository from "../repositories/geo.repository.js";
 import { jsonResponse } from "../utils/responseApi.js";
 import { AppError } from "../utils/AppError.js";
+import { positionSchema } from "../validators/geo.validator.js";
 
 // ─── Pays (public) ────────────────────────────────────────────────────────────
 
@@ -103,6 +104,20 @@ export const getQuartiersByVille = async (req: Request, res: Response): Promise<
   const quartiers = await GeoRepository.findQuartiersByVille(req.params.villeId as string);
   res.status(StatusCodes.OK).json(
     jsonResponse({ status: "success", message: "Quartiers récupérés", data: quartiers })
+  );
+};
+
+export const getQuartierProche = async (req: Request, res: Response): Promise<void> => {
+  const parsed = positionSchema.safeParse(req.query);
+  if (!parsed.success) {
+    throw new AppError(parsed.error.issues[0]?.message ?? "Position invalide", StatusCodes.BAD_REQUEST);
+  }
+  const quartier = await GeoRepository.findQuartierLePlusProche(parsed.data.lat, parsed.data.lng);
+  if (!quartier) {
+    throw new AppError("Aucun quartier connu près de votre position.", StatusCodes.NOT_FOUND);
+  }
+  res.status(StatusCodes.OK).json(
+    jsonResponse({ status: "success", message: "Quartier le plus proche récupéré", data: quartier })
   );
 };
 

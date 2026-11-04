@@ -1,3 +1,4 @@
+import { LocateFixed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/NativeSelect";
@@ -60,13 +61,27 @@ export function EtapeType({ form }: { form: AnnonceForm }) {
 }
 
 export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
-  const { v, maj, listes, erreurs } = form;
+  const { v, maj, listes, erreurs, utiliserMaPosition, geolocalisation } = form;
   return (
     <div className="space-y-5">
+      <div>
+        <Button type="button" variant="outline" onClick={utiliserMaPosition} disabled={geolocalisation.enCours} className="w-full sm:w-auto">
+          <LocateFixed aria-hidden className="size-5" />
+          {geolocalisation.enCours ? "Recherche de votre position…" : "Utiliser ma position"}
+        </Button>
+        <p className="mt-2 text-caption text-texte2" aria-live="polite">
+          {geolocalisation.erreur ??
+            (v.positionGps
+              ? "Lieu rempli depuis votre position. Vérifiez-le, il reste modifiable."
+              : "Vous êtes dans le bien ? Remplissez le pays, la région et le quartier en un geste.")}
+        </p>
+      </div>
       <FormField label="Pays" error={erreurs.pays}>
         <NativeSelect
           value={v.pays?.id ?? ""}
-          onChange={(e) => maj({ pays: listes.pays.find((p) => p.id === e.target.value) ?? null, ville: null, quartier: null })}
+          onChange={(e) =>
+            maj({ pays: listes.pays.find((p) => p.id === e.target.value) ?? null, ville: null, quartier: null, positionGps: null })
+          }
         >
           <option value="">Choisir un pays</option>
           {listes.pays.map((p) => (
@@ -82,7 +97,7 @@ export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
           value={v.ville?.id ?? ""}
           disabled={!v.pays || listes.villesChargement}
           onChange={(e) =>
-            maj({ ville: listes.villes.find((x) => x.id === e.target.value) ?? null, quartier: null, latitude: null, longitude: null })
+            maj({ ville: listes.villes.find((x) => x.id === e.target.value) ?? null, quartier: null, latitude: null, longitude: null, positionGps: null })
           }
         >
           <option value="">{v.pays ? "Choisir une région" : "Choisissez d'abord le pays"}</option>
@@ -101,7 +116,7 @@ export function EtapeLocalisation({ form }: { form: AnnonceForm }) {
           disabled={!v.ville || listes.quartiersChargement}
           onChange={(e) => {
             const quartier = listes.quartiers.find((q) => q.id === e.target.value) ?? null;
-            maj({ quartier, latitude: quartier?.latitude ?? null, longitude: quartier?.longitude ?? null });
+            maj({ quartier, latitude: quartier?.latitude ?? null, longitude: quartier?.longitude ?? null, positionGps: null });
           }}
         >
           <option value="">

@@ -46,6 +46,34 @@ export const deleteVille = (id: string) =>
 
 // ─── Quartiers ────────────────────────────────────────────────────────────────
 
+/** Distance maximale entre une position et un quartier pour proposer ce quartier. */
+const RAYON_QUARTIER_PROCHE_KM = 10;
+
+/**
+ * Le quartier connu le plus proche d'une position (formule de haversine en SQL), avec sa ville
+ * et son pays, ou null s'il n'y en a aucun dans un rayon de RAYON_QUARTIER_PROCHE_KM.
+ */
+export const findQuartierLePlusProche = async (lat: number, lng: number) => {
+  const [proche] = await prisma.$queryRaw<{ id: string; distanceKm: number }[]>`
+    SELECT id, distance_km AS "distanceKm" FROM (
+      SELECT id,
+        6371 * 2 * ASIN(SQRT(
+          POWER(SIN(RADIANS(latitude - ${lat}) / 2), 2) +
+          COS(RADIANS(${lat})) * COS(RADIANS(latitude)) * POWER(SIN(RADIANS(longitude - ${lng}) / 2), 2)
+        )) AS distance_km
+      FROM "Quartier"
+    ) AS q
+    WHERE distance_km <= ${RAYON_QUARTIER_PROCHE_KM}
+    ORDER BY distance_km
+    LIMIT 1`;
+  if (!proche) return null;
+  const quartier = await prisma.quartier.findUnique({
+    where: { id: proche.id },
+    include: { ville: { include: { pays: true } } },
+  });
+  return quartier ? { ...quartier, distanceKm: proche.distanceKm } : null;
+};
+
 export const findQuartiersByVille = (villeId: string) =>
   prisma.quartier.findMany({ where: { villeId }, orderBy: { nom: "asc" } });
 

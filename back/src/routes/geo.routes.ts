@@ -13,6 +13,9 @@ router.get("/pays", controllerWrapper(GeoController.getPays));
 /** GET /api/geo/pays/:paysId/villes - villes d'un pays (public) */
 router.get("/pays/:paysId/villes", controllerWrapper(GeoController.getVilles));
 
+/** GET /api/geo/quartiers/proche?lat=&lng= - quartier connu le plus proche d'une position (public) */
+router.get("/quartiers/proche", controllerWrapper(GeoController.getQuartierProche));
+
 /** GET /api/geo/villes/:villeId/quartiers - quartiers d'une ville (public) */
 router.get("/villes/:villeId/quartiers", controllerWrapper(GeoController.getQuartiersByVille));
 

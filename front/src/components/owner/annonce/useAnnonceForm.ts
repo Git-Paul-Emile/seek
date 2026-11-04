@@ -6,7 +6,8 @@ import type { Bien, SaveDraftPayload } from "@/api/bien";
 import type { TypeLogement } from "@/api/typeLogement";
 import type { TypeTransaction } from "@/api/typeTransaction";
 import type { StatutBien } from "@/api/statutBien";
-import type { Pays, Ville, Quartier } from "@/api/geo";
+import { fetchQuartierProche, type Pays, type Ville, type Quartier } from "@/api/geo";
+import { isAxiosError } from "axios";
 import { fetchChampsForTypeLogement } from "@/api/typeLogementChamp";
 import { fetchEquipementsForTypeLogement } from "@/api/typeLogementEquipement";
 import { fetchMeublesForTypeLogement } from "@/api/typeLogementMeuble";
@@ -39,6 +40,8 @@ export interface AnnonceValeurs {
   quartier: Quartier | null;
   latitude: number | null;
   longitude: number | null;
+  /** Position relevée par le téléphone : prioritaire sur l'adresse géocodée et le centre du quartier. */
+  positionGps: { latitude: number; longitude: number } | null;
   adresse: string;
   pointRepere: string;
   surface: string;
@@ -71,7 +74,7 @@ export interface AnnonceValeurs {
 
 const VALEURS_INITIALES: AnnonceValeurs = {
   typeLogement: null, typeTransaction: null, statutBien: null, titre: "", description: "",
-  pays: null, ville: null, quartier: null, latitude: null, longitude: null, adresse: "", pointRepere: "",
+  pays: null, ville: null, quartier: null, latitude: null, longitude: null, positionGps: null, adresse: "", pointRepere: "",
   surface: "", etage: "", nbChambres: 0, nbCuisines: 0, nbSalons: 0, nbSdb: 0, nbWc: 0,
   prix: "", caution: "", frequence: "mensuel", chargesIncluses: false, disponibleLe: "",
   meuble: false, fumeurs: false, animaux: false, parking: false, ascenseur: false,
@@ -353,8 +356,8 @@ export function useAnnonceForm() {
     quartier: v.quartier?.nom,
     adresse: v.adresse.trim() || undefined,
     pointRepere: v.pointRepere.trim() || undefined,
-    latitude: v.quartier?.latitude ?? v.latitude,
-    longitude: v.quartier?.longitude ?? v.longitude,
+    latitude: v.positionGps?.latitude ?? v.quartier?.latitude ?? v.latitude,
+    longitude: v.positionGps?.longitude ?? v.quartier?.longitude ?? v.longitude,
     surface: nombreOuNull(v.surface) ?? undefined,
     etage: nombreOuNull(v.etage) ?? undefined,
     nbChambres: v.nbChambres || undefined,
@@ -426,6 +429,51 @@ export function useAnnonceForm() {
     }
   };
 
+  // ── Géolocalisation : remplit pays, région et quartier depuis la position du téléphone ──
+  const [geolocalisation, setGeolocalisation] = useState<{ enCours: boolean; erreur: string | null }>({ enCours: false, erreur: null });
+  const utiliserMaPosition = () => {
+    if (!("geolocation" in navigator)) {
+      setGeolocalisation({ enCours: false, erreur: "Votre navigateur ne permet pas la géolocalisation. Choisissez le lieu dans les listes." });
+      return;
+    }
+    setGeolocalisation({ enCours: true, erreur: null });
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const quartier = await fetchQuartierProche(coords.latitude, coords.longitude);
+          const { pays, ...ville } = quartier.ville;
+          maj({
+            pays,
+            ville,
+            quartier,
+            latitude: quartier.latitude,
+            longitude: quartier.longitude,
+            positionGps: { latitude: coords.latitude, longitude: coords.longitude },
+          });
+          setGeolocalisation({ enCours: false, erreur: null });
+        } catch (erreur) {
+          const horsZone = isAxiosError(erreur) && erreur.response?.status === 404;
+          setGeolocalisation({
+            enCours: false,
+            erreur: horsZone
+              ? "Aucun quartier connu près de votre position. Choisissez le lieu dans les listes."
+              : "Le lieu n'a pas pu être trouvé. Vérifiez votre connexion ou choisissez-le dans les listes.",
+          });
+        }
+      },
+      (erreur) => {
+        setGeolocalisation({
+          enCours: false,
+          erreur:
+            erreur.code === erreur.PERMISSION_DENIED
+              ? "La localisation est refusée. Autorisez-la dans votre navigateur, ou choisissez le lieu dans les listes."
+              : "Votre position n'a pas pu être obtenue. Réessayez, ou choisissez le lieu dans les listes.",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  };
+
   const envoyer = async (commeBrouillon: boolean) => {
     if (!commeBrouillon) {
       const invalide = ETAPES_VALIDEES.find((id) => !validerEtape(id));
@@ -438,7 +486,7 @@ export function useAnnonceForm() {
     setActionEnCours(commeBrouillon ? "brouillon" : "publication");
     try {
       const payload = chargeUtile();
-      const coordonnees = await coordonneesGeocodees();
+      const coordonnees = v.positionGps ? null : await coordonneesGeocodees();
       if (coordonnees) [payload.latitude, payload.longitude] = coordonnees;
       const photos = v.nouvellesPhotos.length
         ? [v.nouvellesPhotos[v.couverture], ...v.nouvellesPhotos.filter((_, i) => i !== v.couverture)].map((p) => p.file)
@@ -467,6 +515,8 @@ export function useAnnonceForm() {
     erreurs,
     erreursChamps,
     setErreursChamps,
+    utiliserMaPosition,
+    geolocalisation,
     listes: {
       types: types.data ?? [],
       transactions: transactions.data ?? [],
