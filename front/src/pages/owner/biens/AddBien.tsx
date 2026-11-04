@@ -11,6 +11,7 @@ import { EtapeCaracteristiques, EtapeLocalisation, EtapeType } from "@/component
 import { EtapeEquipements, EtapeMeubles } from "@/components/owner/annonce/EtapesEquipements";
 import { EtapePhotos } from "@/components/owner/annonce/EtapePhotos";
 import { EtapePrix, EtapeRecapitulatif } from "@/components/owner/annonce/EtapesFinales";
+import { ProgressionEnvoi } from "@/components/owner/annonce/ProgressionEnvoi";
 
 // Publier ou modifier une annonce en 8 étapes (charte, planches 26 et 33),
 // avec un brouillon enregistré à chaque changement d'étape.
@@ -163,10 +164,14 @@ export default function AddBien() {
             <h2 className="font-display text-h2 font-bold text-encre">{etape.titre}</h2>
             <span className="text-body-m text-texte2">Étape {form.indexEtape + 1} sur {ETAPES.length}</span>
           </div>
-          <fieldset disabled={form.verrouilleParBail} className="min-w-0 disabled:opacity-70">
-            <legend className="sr-only">{etape.titre}</legend>
-            <Contenu form={form} />
-          </fieldset>
+          {form.progressionEnvoi ? (
+            <ProgressionEnvoi progression={form.progressionEnvoi} />
+          ) : (
+            <fieldset disabled={form.verrouilleParBail} className="min-w-0 disabled:opacity-70">
+              <legend className="sr-only">{etape.titre}</legend>
+              <Contenu form={form} />
+            </fieldset>
+          )}
           <div className="mt-10 hidden border-t border-filet pt-6 lg:block">
             <div className="grid grid-cols-[1fr_auto] items-center gap-4">
               {form.brouillonAutorise && form.indexEtape === ETAPES.length - 1 ? (

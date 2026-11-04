@@ -13,6 +13,7 @@ import {
   saveDraft,
   type SaveDraftPayload,
   type CreateBienPayload,
+  type SuiviEnvoi,
 } from "@/api/bien";
 
 const QK = "biens";
@@ -56,11 +57,13 @@ export const useCreateBien = () => {
       payload,
       photos,
       video,
+      onEnvoi,
     }: {
       payload: CreateBienPayload;
       photos: File[];
       video?: File | null;
-    }) => createBien(payload, photos, video),
+      onEnvoi?: SuiviEnvoi;
+    }) => createBien(payload, photos, video, onEnvoi),
     onSuccess: () => qc.invalidateQueries({ queryKey: [QK] }),
   });
 };

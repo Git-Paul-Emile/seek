@@ -150,6 +150,23 @@ export interface SaveDraftPayload {
   existingVideoUrl?: string | null;
   champsValeurs?: { champId: string; valeur: string }[];
   brouillon?: boolean;
+  /** Soumettre l'annonce dès que les nouveaux médias sont traités par le serveur. */
+  soumettre?: boolean;
+}
+
+/** Brouillon enregistré ; traitementId suit l'envoi en arrière-plan des nouveaux médias. */
+export type BrouillonEnregistre = Bien & { traitementId: string | null };
+
+export type EtapeTraitementMedias = "photos" | "video" | "soumission";
+
+export interface TraitementMedias {
+  id: string;
+  bienId: string;
+  etat: "en_attente" | "en_cours" | "termine" | "echec";
+  progression: { etape: EtapeTraitementMedias; faits: number; total: number } | null;
+  soumettre: boolean;
+  nouvelleTentative: boolean;
+  erreur: string | null;
 }
 
 // Keep for backward compat
@@ -191,34 +208,47 @@ export const fetchOwnerStats = (): Promise<OwnerStats> =>
 export const fetchDraft = (): Promise<Bien | null> =>
   api.get<{ data: Bien | null }>("/draft").then((r) => r.data.data);
 
+/** Pourcentage déjà transmis au serveur pendant l'envoi des fichiers (0 à 100). */
+export type SuiviEnvoi = (pourcent: number) => void;
+
 export const saveDraft = (
   payload: SaveDraftPayload,
   newPhotos: File[],
-  newVideo?: File | null
-): Promise<Bien> => {
+  newVideo?: File | null,
+  onEnvoi?: SuiviEnvoi
+): Promise<BrouillonEnregistre> => {
   const formData = new FormData();
   formData.append("data", JSON.stringify(payload));
   newPhotos.forEach((f) => formData.append("photos", f));
   if (newVideo) formData.append("video", newVideo);
   return api
-    .post<{ data: Bien }>("/draft", formData, {
+    .post<{ data: BrouillonEnregistre }>("/draft", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onEnvoi
+        ? (evenement) => onEnvoi(evenement.total ? Math.round((evenement.loaded / evenement.total) * 100) : 0)
+        : undefined,
     })
     .then((r) => r.data.data);
 };
 
-// Backward-compatible create flow:
-// save as draft, then optionally submit for publication.
+/**
+ * Enregistre le brouillon puis, si demandé, soumet l'annonce. Avec de nouveaux médias, la
+ * soumission est faite par le serveur après leur traitement : suivre traitementId.
+ */
 export const createBien = async (
   payload: CreateBienPayload,
   newPhotos: File[],
-  newVideo?: File | null
-): Promise<Bien> => {
+  newVideo?: File | null,
+  onEnvoi?: SuiviEnvoi
+): Promise<{ bien: Bien; traitementId: string | null }> => {
   const { brouillon = true, ...draftPayload } = payload;
-  const draft = await saveDraft(draftPayload, newPhotos, newVideo);
-  if (brouillon) return draft;
-  return soumettreAnnonce(draft.id);
+  const { traitementId, ...draft } = await saveDraft({ ...draftPayload, soumettre: !brouillon }, newPhotos, newVideo, onEnvoi);
+  if (brouillon || traitementId) return { bien: draft, traitementId };
+  return { bien: await soumettreAnnonce(draft.id), traitementId: null };
 };
+
+export const fetchTraitementMedias = (traitementId: string): Promise<TraitementMedias> =>
+  api.get<{ data: TraitementMedias }>(`/traitements/${traitementId}`).then((r) => r.data.data);
 
 export const soumettreAnnonce = (id: string): Promise<Bien> =>
   api.patch<{ data: Bien }>(`/${id}/soumettre`).then((r) => r.data.data);

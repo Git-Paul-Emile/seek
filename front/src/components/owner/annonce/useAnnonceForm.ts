@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import type { Bien, SaveDraftPayload } from "@/api/bien";
+import { fetchTraitementMedias, type Bien, type SaveDraftPayload, type TraitementMedias } from "@/api/bien";
+import { messageErreurApi } from "@/lib/erreurApi";
 import type { TypeLogement } from "@/api/typeLogement";
 import type { TypeTransaction } from "@/api/typeTransaction";
 import type { StatutBien } from "@/api/statutBien";
@@ -23,6 +24,35 @@ import { DESCRIPTION_MAX, DESCRIPTION_MIN, ETAPES, ETAPES_VALIDEES, FREQUENCES, 
 
 // État, validation, brouillon automatique et envoi du formulaire d'annonce.
 // La logique métier est celle de l'ancien formulaire à onglets, réorganisée en 8 étapes.
+
+/** Progression affichée pendant l'envoi d'une annonce avec de nouveaux médias. */
+export interface ProgressionEnvoi {
+  /** « envoi » : fichiers en route vers le serveur ; ensuite, traitement en arrière-plan. */
+  phase: "envoi" | "photos" | "video" | "soumission";
+  pourcent: number;
+  libelle: string;
+  nouvelleTentative: boolean;
+}
+
+const INTERVALLE_SUIVI_MS = 1500;
+const DUREE_MAX_SUIVI_MS = 15 * 60 * 1000;
+
+/** Le traitement en arrière-plan a échoué définitivement : message destiné au propriétaire. */
+class EchecTraitementMedias extends Error {}
+
+const libelleTraitement = (traitement: TraitementMedias): string => {
+  if (traitement.etat === "en_attente" && !traitement.progression) return "Fichiers reçus, traitement sur le point de démarrer";
+  switch (traitement.progression?.etape) {
+    case "video":
+      return "Envoi de la vidéo";
+    case "soumission":
+      return "Envoi à la modération";
+    default:
+      return "Traitement des photos (compression et filigrane)";
+  }
+};
+
+const attendre = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface PhotoLocale {
   file: File;
@@ -164,6 +194,14 @@ export function useAnnonceForm() {
   const [brouillonEnregistreA, setBrouillonEnregistreA] = useState<Date | null>(null);
   const [brouillonEchec, setBrouillonEchec] = useState(false);
   const [actionEnCours, setActionEnCours] = useState<"brouillon" | "publication" | null>(null);
+  const [progressionEnvoi, setProgressionEnvoi] = useState<ProgressionEnvoi | null>(null);
+  const monteRef = useRef(true);
+  useEffect(() => {
+    monteRef.current = true;
+    return () => {
+      monteRef.current = false;
+    };
+  }, []);
 
   // ── Champs autorisés par le type de logement ──
   const champsSysteme = useMemo(() => {
@@ -474,6 +512,29 @@ export function useAnnonceForm() {
     );
   };
 
+  /** Suit le traitement en arrière-plan jusqu'à sa fin ; lève EchecTraitementMedias s'il échoue. */
+  const suivreTraitement = async (traitementId: string) => {
+    const limite = Date.now() + DUREE_MAX_SUIVI_MS;
+    while (monteRef.current && Date.now() < limite) {
+      const traitement = await fetchTraitementMedias(traitementId);
+      if (traitement.etat === "termine") return;
+      if (traitement.etat === "echec") {
+        throw new EchecTraitementMedias(traitement.erreur ?? "Les photos ou la vidéo n'ont pas pu être enregistrées.");
+      }
+      const { faits = 0, total = 1, etape = "photos" } = traitement.progression ?? {};
+      setProgressionEnvoi({
+        phase: etape,
+        pourcent: Math.round((faits / Math.max(total, 1)) * 100),
+        libelle: libelleTraitement(traitement),
+        nouvelleTentative: traitement.nouvelleTentative,
+      });
+      await attendre(INTERVALLE_SUIVI_MS);
+    }
+    if (monteRef.current) {
+      throw new EchecTraitementMedias("Le traitement prend plus de temps que prévu. Retrouvez l'annonce dans « Mes biens » dans quelques minutes.");
+    }
+  };
+
   const envoyer = async (commeBrouillon: boolean) => {
     if (!commeBrouillon) {
       const invalide = ETAPES_VALIDEES.find((id) => !validerEtape(id));
@@ -491,13 +552,30 @@ export function useAnnonceForm() {
       const photos = v.nouvellesPhotos.length
         ? [v.nouvellesPhotos[v.couverture], ...v.nouvellesPhotos.filter((_, i) => i !== v.couverture)].map((p) => p.file)
         : [];
-      await creerBien({ payload: { ...payload, brouillon: commeBrouillon }, photos, video: v.video?.file ?? null });
+      const video = v.video?.file ?? null;
+      if (photos.length > 0 || video) {
+        setProgressionEnvoi({ phase: "envoi", pourcent: 0, libelle: "Envoi des fichiers au serveur", nouvelleTentative: false });
+      }
+      const { traitementId } = await creerBien({
+        payload: { ...payload, brouillon: commeBrouillon },
+        photos,
+        video,
+        onEnvoi: (pourcent) =>
+          setProgressionEnvoi({ phase: "envoi", pourcent, libelle: "Envoi des fichiers au serveur", nouvelleTentative: false }),
+      });
+      if (traitementId) await suivreTraitement(traitementId);
+      if (!monteRef.current) return;
       toast.success(commeBrouillon ? "Brouillon enregistré" : "Annonce envoyée à la modération");
       navigate("/owner/biens");
-    } catch {
-      toast.error("L'annonce n'a pas pu être enregistrée. Vérifiez votre connexion puis réessayez.");
+    } catch (erreur) {
+      toast.error(
+        erreur instanceof EchecTraitementMedias
+          ? erreur.message
+          : messageErreurApi(erreur, "L'annonce n'a pas pu être enregistrée. Vérifiez votre connexion puis réessayez."),
+      );
     } finally {
       setActionEnCours(null);
+      setProgressionEnvoi(null);
     }
   };
 
@@ -544,6 +622,7 @@ export function useAnnonceForm() {
     envoyer,
     envoiEnCours: envoiEnCours || actionEnCours !== null,
     actionEnCours,
+    progressionEnvoi,
     editId,
     statutAnnonce,
     modificationPubliee,
