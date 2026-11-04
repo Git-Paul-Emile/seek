@@ -10,6 +10,7 @@ import { ContactBar, ContactCard } from "@/components/annonce-detail/ContactActi
 import { DescriptionEquipements } from "@/components/annonce-detail/DescriptionEquipements";
 import { LocalisationSection } from "@/components/annonce-detail/LocalisationSection";
 import { ProprietaireCard } from "@/components/annonce-detail/ProprietaireCard";
+import { VideoSection } from "@/components/annonce-detail/VideoSection";
 import { ListingCard } from "@/components/annonces/ListingCard";
 import { PropertyIllustration } from "@/components/brand/PropertyIllustration";
 import SignalementModal from "@/components/SignalementModal";
@@ -112,6 +113,7 @@ export default function AnnonceDetail() {
           <AnnonceResume bien={bien} />
           <CaracteristiquesGrid bien={bien} />
           <DescriptionEquipements bien={bien} />
+          <VideoSection bien={bien} />
           <LocalisationSection bien={bien} />
           <div className="space-y-6">
             <ProprietaireCard bien={bien} onSignaler={() => setSignalementOuvert(true)} />
