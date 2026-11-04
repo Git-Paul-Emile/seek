@@ -32,5 +32,5 @@ export const PHOTO_TAILLE_MAX = 5 * 1024 * 1024;
 export const PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif", "image/jfif", "image/pjpeg"];
 export const VIDEO_TAILLE_MAX = 100 * 1024 * 1024;
 export const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/avi", "video/x-msvideo", "video/webm", "video/x-matroska"];
-export const DESCRIPTION_MIN = 200;
+export const DESCRIPTION_MIN = 10;
 export const DESCRIPTION_MAX = 1500;

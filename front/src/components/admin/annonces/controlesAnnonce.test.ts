@@ -31,7 +31,8 @@ describe("contrôles automatiques d'une annonce", () => {
   });
 
   it("signale les manques d'une annonce incomplète", () => {
-    const controles = controlerAnnonce({ photos: ["a"], description: "Court. 77 123 45 67", prix: null, quartier: null, ville: "Dakar" });
+    // Plus courte que DESCRIPTION_MIN et contient un numéro.
+    const controles = controlerAnnonce({ photos: ["a"], description: "771234567", prix: null, quartier: null, ville: "Dakar" });
     expect(controles.filter(({ ok }) => !ok)).toHaveLength(5);
   });
 });
